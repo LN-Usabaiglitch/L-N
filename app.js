@@ -382,8 +382,8 @@ $("#btnPrint").onclick=()=>{
     ໄລຍະ: ${mk==="all"?"ທັງໝົດ":mk} · ພິມວັນທີ ${today()}</p>
     <div class="sum">
       <div><b>${rows.length}</b><span>ລູກຄ້າທັງໝົດ</span></div>
-      <div><b>${sold}</b><span>ຊື້ດິນແລ້ວ</span></div>
-      <div><b>${rows.length-sold}</b><span>ຍັງບໍ່ຊື້</span></div>
+      <div><b>${sold}</b><span>ປິດຍອດຂາຍແລ້ວ</span></div>
+      <div><b>${rows.length-sold}</b><span>ຜູ້ສົນໃຈ</span></div>
       <div><b>${rows.length?Math.round(sold/rows.length*100):0}%</b><span>ອັດຕາປິດການຂາຍ</span></div>
       <div><b>${gone.length}</b><span>ຖືກລຶບ</span></div>
     </div>
