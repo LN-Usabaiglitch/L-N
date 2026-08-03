@@ -40,7 +40,7 @@ input,select,textarea{font-size:16px;color:inherit}
 .linkbtn{color:#fff;text-decoration:underline;font-size:12.5px;padding:2px 0}
 
 .sidebar{
-  background:var(--navy) url("tri.png") center center/cover no-repeat;
+  background:var(--navy);
   display:flex;flex-direction:column;
   position:sticky;top:var(--hh,86px);align-self:start;
   height:calc(100vh - var(--hh,86px));
