@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="lo">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#C4620E">
+<title>ສະຖິຕິລູກຄ້າ — U-SABAI LAND AND HOUSE</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Phetsarath:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div id="setup" class="gate"><div class="box">
+  <h1>ຍັງບໍ່ທັນຕັ້ງຄ່າ Firebase</h1><p class="sub">ໃສ່ FIREBASE_CONFIG ໃນໄຟລ໌ index.html</p>
+</div></div>
+
+<div id="gate" class="gate"><div class="box">
+  <div class="logo-g"><img src="logo.png" alt="U-SABAI"></div>
+  <h1>ສະຖິຕິລູກຄ້າ</h1>
+  <p class="sub">ບໍລິສັດ ຢູ່ສະບາຍ ແລນ ແອນ ເຮົາສ໌</p>
+  <div class="err" id="autherr"></div>
+  <form id="loginForm" autocomplete="on">
+    <label class="f"><span>ອີເມວ</span>
+      <input class="input" id="email" name="email" type="email" autocomplete="username" inputmode="email" placeholder="name@email.com"></label>
+    <label class="f"><span>ລະຫັດຜ່ານ</span>
+      <input class="input" id="pass" name="password" type="password" autocomplete="current-password" placeholder="••••••••"></label>
+    <button class="btn" id="btnLogin" type="submit">ເຂົ້າສູ່ລະບົບ</button>
+  </form>
+  <div style="height:8px"></div>
+  <button class="btn ghost" id="btnForgot" style="font-size:14px">ລືມລະຫັດຜ່ານ?</button>
+</div></div>
+
+<div id="gate-reset" class="gate"><div class="box">
+  <h1>ລືມລະຫັດຜ່ານ</h1><p class="sub">ໃສ່ອີເມວທີ່ໃຊ້ເຂົ້າລະບົບ</p>
+  <div class="err" id="reseterr"></div>
+  <label class="f"><span>ອີເມວ</span><input class="input" id="reset-email" type="email" inputmode="email"></label>
+  <button class="btn" id="btnSendReset">ສົ່ງລິງຄ໌ປ່ຽນລະຫັດ</button>
+  <div style="height:8px"></div>
+  <button class="btn ghost" id="btnBackLogin">ກັບຄືນ</button>
+  <div class="note">ຖ້າບໍ່ເຫັນອີເມວ ໃຫ້ກວດກ່ອງ <b>Spam</b> — ຜູ້ສົ່ງ <code>noreply@usb1-a6129.firebaseapp.com</code> ພົບແລ້ວກົດ “Not spam” ເທື່ອດຽວ ຫຼື ຕິດຕໍ່ຜູ້ຈັດການ</div>
+</div></div>
+
+<div id="app" class="hide">
+  <header class="topbar">
+    <div class="brand">
+      <b>ສະຖິຕິລູກຄ້າ ບໍລິສັດ ຢູ່ສະບາຍ ແລນ ແອນ ເຮົາສ໌</b>
+      <span>ໂຄງການດິນຈັດສັນ</span>
+    </div>
+    <img class="hlogo" src="logo.png" alt="U-SABAI">
+    <div class="hpills">
+      <span class="pill navy">ບັນທຶກ ສະຖິຕິລູກຄ້າ</span>
+      <span class="pill white">ໂຄງການດິນຈັດສັນ</span>
+    </div>
+    <div class="userbox">
+      <span class="role" id="roleTag">ພະນັກງານ</span>
+      <span class="em" id="who"></span>
+      <button class="linkbtn" id="btnProfile">ໂປຣໄຟລ໌</button> ·
+      <button class="linkbtn" id="btnChangePw">ປ່ຽນລະຫັດ</button> ·
+      <button class="linkbtn" id="btnOut">ອອກ</button>
+    </div>
+    <div class="banner hide" id="banner"></div>
+  </header>
+
+  <aside class="sidebar">
+    <div class="logo"><img src="logo.png" alt="U-SABAI"></div>
+    <nav class="sidenav" id="nav">
+      <button data-v="add" aria-current="page">ບັນທຶກ</button>
+      <button data-v="list">ລາຍຊື່</button>
+      <button data-v="sum" id="navSum">ສະຫຼຸບ</button>
+      <button data-v="admin" id="navAdmin">ຜູ້ດູແລ</button>
+    </nav>
+  </aside>
+
+  <main>
+    <section class="view on" id="v-add">
+      <div class="card">
+        <p class="eyebrow">ບັນທຶກລູກຄ້າໃໝ່</p>
+        <label class="f"><span>ເບີໂທລະສັບ</span>
+          <input class="input num" id="a-phone" type="tel" inputmode="tel" placeholder="020 xxxx xxxx"></label>
+        <label class="f"><span>ຊື່ລູກຄ້າ <span class="chip" id="a-hint">A1</span></span>
+          <input class="input" id="a-name" placeholder="ຮູ້ຊື່ແລ້ວພິມທັບລະຫັດໄດ້ເລີຍ"></label>
+        <label class="f"><span>ສະຖານະ</span>
+          <div class="seg" id="a-seg">
+            <button type="button" data-s="open" aria-pressed="true">ສົນໃຈ / ຖາມ</button>
+            <button type="button" class="buy" data-s="sold" aria-pressed="false">ຊື້ດິນແລ້ວ</button>
+          </div></label>
+        <label class="f"><span>ໂຄງການທີ່ລູກຄ້າສົນໃຈ</span>
+          <select class="input" id="a-project"></select>
+          <input class="input hide" id="a-project-other" style="margin-top:8px" placeholder="ພິມຊື່ໂຄງການ ຫຼື ສິ່ງທີ່ລູກຄ້າສົນໃຈ"></label>
+        <label class="f"><span>ວັນທີ</span>
+          <div class="row" id="a-date-row">
+            <select class="input num" id="a-y"></select>
+            <select class="input num" id="a-m"></select>
+            <select class="input num" id="a-d"></select>
+          </div></label>
+        <label class="f"><span>ໝາຍເຫດ</span>
+          <textarea class="input" id="a-note" placeholder="ເຊັ່ນ: ຖາມລາຄາຕອນໜ້າຕິດຖະໜົນ"></textarea></label>
+        <button class="btn orange" id="btnAdd">+ ເພີ່ມລູກຄ້າ</button>
+      </div>
+    </section>
+
+    <section class="view" id="v-list">
+      <div class="minibar">
+        <div><b class="num" id="m-count">0</b> <span style="font-size:13.5px;color:var(--muted)">ລູກຄ້າໃນເດືອນນີ້</span></div>
+        <select id="m-month" class="num"></select>
+      </div>
+      <div class="card">
+        <p class="eyebrow">ຄົ້ນຫາ</p>
+        <input class="input num" id="q" type="search" inputmode="tel" placeholder="ພິມເບີໂທ ຫຼື ຊື່ລູກຄ້າ">
+        <div style="height:8px"></div>
+        <div class="seg" id="l-seg">
+          <button type="button" data-f="all" aria-pressed="true">ທັງໝົດ</button>
+          <button type="button" data-f="open" aria-pressed="false">ສົນໃຈ</button>
+          <button type="button" class="buy" data-f="sold" aria-pressed="false">ຊື້ແລ້ວ</button>
+        </div>
+      </div>
+      <div class="card"><div id="list"></div></div>
+    </section>
+
+    <section class="view" id="v-sum">
+      <div class="card">
+        <p class="eyebrow">ສະຫຼຸບຍອດ</p>
+        <select class="input num" id="s-month" style="margin-bottom:12px"></select>
+        <div class="bignum"><b class="num" id="s-total">0</b><span>ລູກຄ້າຕິດຕໍ່ເຂົ້າມາ</span></div>
+        <div class="stats">
+          <div class="stat sold"><b class="num" id="s-sold">0</b><span>ຊື້ດິນແລ້ວ</span></div>
+          <div class="stat open"><b class="num" id="s-open">0</b><span>ຍັງບໍ່ຊື້</span></div>
+          <div class="stat"><b class="num" id="s-rate">0%</b><span>ອັດຕາປິດການຂາຍ</span></div>
+          <div class="stat del"><b class="num" id="s-del">0</b><span>ຖືກລຶບ</span></div>
+        </div>
+      </div>
+      <div class="card"><p class="eyebrow">ໂຄງການທີ່ຖືກຖາມຫຼາຍທີ່ສຸດ</p><div id="byproject"></div></div>
+      <div class="card">
+        <p class="eyebrow">ລູກຄ້າແຕ່ລະຄົນ</p>
+        <div class="plots" id="plots"></div>
+        <div class="legend"><span><i></i>ສົນໃຈ</span><span><i class="s"></i>ຊື້ແລ້ວ</span></div>
+      </div>
+      <div class="card"><p class="eyebrow">ຜົນງານແຕ່ລະຄົນ</p><div id="byuser"></div></div>
+      <div class="card"><p class="eyebrow">ລາຍການທີ່ຖືກລຶບ</p><div id="deleted"></div></div>
+      <div class="card"><button class="btn ghost" id="btnPrint">🖨 ພິມລາຍງານ / PDF</button></div>
+    </section>
+
+    <section class="view" id="v-admin">
+      <div class="card">
+        <p class="eyebrow">ໝາຍເຫດແຖບສີສົ້ມດ້ານເທິງ (ທຸກຄົນເຫັນ)</p>
+        <textarea class="input" id="ad-banner" placeholder="ເຊັ່ນ: ເດືອນນີ້ເປົ້າໝາຍ 30 ລູກຄ້າ — ຢ່າລືມບັນທຶກທຸກເບີ"></textarea>
+        <div style="height:10px"></div>
+        <button class="btn" id="btnSaveBanner">ບັນທຶກໝາຍເຫດ</button>
+      </div>
+      <div class="card">
+        <p class="eyebrow">ຈັດການລາຍຊື່ໂຄງການ</p>
+        <div id="projlist"></div>
+        <div style="height:10px"></div>
+        <div class="row">
+          <input class="input" id="ad-proj" placeholder="ຊື່ໂຄງການໃໝ່" style="flex:2">
+          <button class="btn" id="btnAddProj" style="flex:1">+ ເພີ່ມ</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <p class="eyebrow">ສ້າງບັນຊີພະນັກງານ</p>
+        <div class="err" id="adminerr"></div>
+        <label class="f"><span>ຊື່ພະນັກງານ</span><input class="input" id="ad-name" placeholder="ຊື່ທີ່ຈະສະແດງໃນລາຍການ"></label>
+        <label class="f"><span>ອີເມວ</span><input class="input" id="ad-email" type="email" inputmode="email" placeholder="staff@email.com"></label>
+        <label class="f"><span>ລະຫັດຜ່ານເລີ່ມຕົ້ນ (6 ຕົວຂຶ້ນໄປ)</span><input class="input" id="ad-pass" type="text" placeholder="ຕັ້ງໃຫ້ເຂົາ ແລ້ວບອກເຂົາ"></label>
+        <button class="btn" id="btnMakeStaff">+ ສ້າງບັນຊີ</button>
+      </div>
+      <div class="card"><p class="eyebrow">ຈັດການພະນັກງານ</p><div id="stafflist"></div></div>
+    </section>
+  </main>
+</div>
+
+<div class="sheet" id="sheet"><div>
+  <h3 id="sheetTitle">ແກ້ໄຂຂໍ້ມູນລູກຄ້າ</h3>
+  <div class="err" id="editerr"></div>
+  <div id="viewOnly" class="hide">
+    <div class="ro" id="roBox"></div>
+    <button class="btn ghost" id="btnCloseRo">ປິດ</button>
+  </div>
+  <div id="editForm" class="hide">
+    <label class="f"><span>ເບີໂທລະສັບ</span><input class="input num" id="e-phone" type="tel" inputmode="tel"></label>
+    <label class="f"><span>ຊື່ລູກຄ້າ (ລຶບຊື່ອອກ = ໃຊ້ລະຫັດອັດຕະໂນມັດ)</span><input class="input" id="e-name"></label>
+    <label class="f"><span>ສະຖານະ</span>
+      <div class="seg" id="e-seg">
+        <button type="button" data-s="open">ສົນໃຈ / ຖາມ</button>
+        <button type="button" class="buy" data-s="sold">ຊື້ດິນແລ້ວ</button>
+      </div></label>
+    <label class="f"><span>ໂຄງການ</span>
+      <select class="input" id="e-project"></select>
+      <input class="input hide" id="e-project-other" style="margin-top:8px" placeholder="ພິມຊື່ໂຄງການ"></label>
+    <label class="f"><span>ວັນທີ</span>
+      <div class="row">
+        <select class="input num" id="e-y"></select>
+        <select class="input num" id="e-m"></select>
+        <select class="input num" id="e-d"></select>
+      </div></label>
+    <label class="f"><span>ໝາຍເຫດ</span><textarea class="input" id="e-note"></textarea></label>
+    <div class="ro" id="roMeta"></div>
+    <button class="btn" id="btnSave">ບັນທຶກການແກ້ໄຂ</button>
+    <div style="height:8px"></div>
+    <div class="row">
+      <button class="btn ghost" id="btnCancel">ປິດ</button>
+      <button class="btn danger" id="btnDel">ລຶບ</button>
+    </div>
+    <div style="height:8px"></div>
+    <button class="btn ghost hide" id="btnRestore">↩ ກູ້ຄືນລາຍການນີ້</button>
+  </div>
+</div></div>
+
+<div class="sheet" id="profsheet"><div>
+  <h3 id="profTitle">ໂປຣໄຟລ໌ຂອງຂ້ອຍ</h3>
+  <div class="err" id="proferr"></div>
+  <div class="profpic">
+    <div class="avatar-lg" id="prof-pic"></div>
+    <div class="profpic-btns">
+      <label class="btn ghost sm" for="prof-file">ເລືອກຮູບ</label>
+      <input type="file" id="prof-file" accept="image/*" style="display:none">
+      <button class="btn ghost sm" id="btnProfClear">ລຶບຮູບ</button>
+    </div>
+  </div>
+  <label class="f"><span>ຊື່ທີ່ຈະສະແດງ</span><input class="input" id="prof-name" placeholder="ຊື່ຫຼິ້ນ ຫຼື ຊື່ເຕັມ"></label>
+  <label class="f"><span>ຕຳແໜ່ງ / ໜ້າທີ່</span><input class="input" id="prof-title" placeholder="ເຊັ່ນ: ພະນັກງານຂາຍ"></label>
+  <label class="f"><span>ເບີໂທຕິດຕໍ່</span><input class="input num" id="prof-phone" type="tel" inputmode="tel" placeholder="020 xxxx xxxx"></label>
+  <div class="ro" id="prof-meta"></div>
+  <button class="btn" id="btnProfSave">ບັນທຶກໂປຣໄຟລ໌</button>
+  <div style="height:8px"></div>
+  <button class="btn ghost" id="btnProfCancel">ຍົກເລີກ</button>
+</div></div>
+
+<div class="sheet" id="pwsheet"><div>
+  <h3>ປ່ຽນລະຫັດຜ່ານ</h3>
+  <div class="err" id="pwerr"></div>
+  <label class="f"><span>ລະຫັດຜ່ານປັດຈຸບັນ</span><input class="input" id="pw-old" type="password"></label>
+  <label class="f"><span>ລະຫັດຜ່ານໃໝ່ (6 ຕົວຂຶ້ນໄປ)</span><input class="input" id="pw-new" type="password"></label>
+  <button class="btn" id="btnPwSave">ບັນທຶກລະຫັດໃໝ່</button>
+  <div style="height:8px"></div>
+  <button class="btn ghost" id="btnPwCancel">ຍົກເລີກ</button>
+</div></div>
+
+<div class="toast" id="toast"></div>
+<div id="sheetprint"></div>
+
+<script type="module" src="app.js"></script>
+</body>
+</html>
