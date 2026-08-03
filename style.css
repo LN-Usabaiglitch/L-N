@@ -72,7 +72,8 @@ main{padding:22px 26px;max-width:1500px;width:100%;min-width:0}
   }
   .topbar::before{
     content:"";position:absolute;inset:0;z-index:-1;
-    background:url("dots.png") center center/cover no-repeat;
+    background:url("dots.png") left top repeat;
+    background-size:44px 44px;
     pointer-events:none;
   }
   .wlogo,.brand{display:none}
