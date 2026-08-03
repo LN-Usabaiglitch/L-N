@@ -13,7 +13,7 @@ import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, createUserWith
          updatePassword, reauthenticateWithCredential, EmailAuthProvider }
   from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager, collection,
-         addDoc, setDoc, updateDoc, deleteDoc, getDoc, doc, onSnapshot, query, orderBy, serverTimestamp }
+         addDoc, setDoc, updateDoc, deleteDoc, doc, onSnapshot, query, orderBy, serverTimestamp }
   from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 const $ = s => document.querySelector(s);
@@ -39,6 +39,7 @@ const roleOf=e=>{const s=staff.find(x=>(x.email||"").toLowerCase()===(e||"").toL
 const isManager=e=>isOwner(e)||roleOf(e)==="manager";
 const staffOf=e=>staff.find(x=>(x.email||"").toLowerCase()===(e||"").toLowerCase())||null;
 const picOf=e=>{const s=staffOf(e);return s&&s.photo?s.photo:"";};
+const staffDocId=e=>{const s=staffOf(e);return s?s.id:(e||"").toLowerCase();};
 function tagHTML(email,extra){
   const p=picOf(email),n=who(email);
   return p?`<span class="tag pic ${extra||""}" style="background-image:url('${p}')"></span>`
@@ -125,6 +126,19 @@ function setDate(py,pm,pd,iso){
 const getDate=(py,pm,pd)=>`${$(py).value}-${$(pm).value}-${$(pd).value}`;
 buildDate("#a-y","#a-m","#a-d"); buildDate("#e-y","#e-m","#e-d");
 setDate("#a-y","#a-m","#a-d",today());
+
+
+/* ---------- ວັດຄວາມສູງແຖບເທິງ ເພື່ອລັອກແຖບຂ້າງໃຫ້ພໍດີ ---------- */
+function syncHeaderHeight(){
+  const h=document.querySelector(".topbar");
+  if(h) document.documentElement.style.setProperty("--hh", h.offsetHeight+"px");
+}
+addEventListener("resize",syncHeaderHeight);
+if(window.ResizeObserver){
+  const ro=new ResizeObserver(syncHeaderHeight);
+  const hb=document.querySelector(".topbar"); if(hb) ro.observe(hb);
+}
+setTimeout(syncHeaderHeight,300);
 
 const GATES=["#gate","#gate-reset","#setup"];
 const showGate=id=>{GATES.forEach(g=>$(g).classList.remove("on"));$("#app").classList.add("hide");
@@ -426,7 +440,7 @@ $("#btnMakeStaff").onclick=async()=>{
   try{
     sec=initializeApp(FIREBASE_CONFIG,"creator-"+Date.now());
     await createUserWithEmailAndPassword(getAuth(sec),email,pass);
-    await setDoc(doc(db,"staff",email),{email,name:nm,active:true,createdAt:serverTimestamp(),by:auth.currentUser.email});
+    await setDoc(doc(db,"staff",staffDocId(email)),{email,name:nm,active:true,createdAt:serverTimestamp(),by:auth.currentUser.email},{merge:true});
     $("#ad-email").value="";$("#ad-pass").value="";$("#ad-name").value="";
     $("#adminerr").classList.remove("on");toast("ສ້າງບັນຊີໃຫ້ "+email+" ແລ້ວ ✓");
   }catch(e){showErr("#adminerr",e);}
@@ -434,8 +448,7 @@ $("#btnMakeStaff").onclick=async()=>{
   b.disabled=false;
 };
 function renderStaff(){
-  const visibleStaff=staff.filter(s=>!s.removed);
-  $("#stafflist").innerHTML=visibleStaff.length?visibleStaff.map(s=>{
+  $("#stafflist").innerHTML=staff.length?staff.map(s=>{
     const own=isOwner(s.email);
     const mg=own||(s.role==="manager");
     const off=s.active===false;
@@ -459,20 +472,14 @@ $("#stafflist").addEventListener("click",async e=>{
   if(rl){
     const wasMg=rl.dataset.mg==="1";
     if(!confirm(wasMg?"ຍົກເລີກສິດຜູ້ດູແລຂອງ "+rl.dataset.role+"?":"ຕັ້ງ "+rl.dataset.role+" ເປັນຜູ້ດູແລ?\nລາວຈະເຫັນແຖບ ສະຫຼຸບ ແລະ ຜູ້ດູແລ ຄືກັນກັບເຈົ້າ"))return;
-    try{await setDoc(doc(db,"staff",rl.dataset.role),{role:wasMg?"staff":"manager"},{merge:true});
+    try{await setDoc(doc(db,"staff",staffDocId(rl.dataset.role)),{email:rl.dataset.role,role:wasMg?"staff":"manager"},{merge:true});
       toast(wasMg?"ຍົກເລີກສິດແລ້ວ":"ຕັ້ງເປັນຜູ້ດູແລແລ້ວ ✓");}
     catch(err){toast("ບໍ່ສຳເລັດ: "+err.code);}
     return;
   }
   if(rm){
-    if(!confirm("ລຶບ "+rm.dataset.rm+" ອອກຈາກລາຍຊື່?\n\nບັນຊີນີ້ຈະຖືກປິດແລະ຋່ອນອອກຈາກລາຍຊື່"))return;
-    try{
-      const email=rm.dataset.rm;
-      await setDoc(doc(db,"staff",email),{active:false,removed:true,removedAt:serverTimestamp(),removedBy:auth.currentUser.email},{merge:true});
-      staff=staff.map(s=>(s.email||"").toLowerCase()===email.toLowerCase()?{...s,active:false,removed:true}:s);
-      renderStaff();
-      toast("ລຶບອອກຈາກລາຍຊື່ແລ້ວ");
-    }
+    if(!confirm("ລຶບ "+rm.dataset.rm+" ອອກຈາກລາຍຊື່?\n\nສຳຄັນ: ຕ້ອງໄປລຶບບັນຊີໃນ Firebase Console ກ່ອນ ບໍ່ດັ່ງນັ້ນລາວຍັງເຂົ້າລະບົບໄດ້"))return;
+    try{await deleteDoc(doc(db,"staff",staffDocId(rm.dataset.rm)));toast("ລຶບອອກຈາກລາຍຊື່ແລ້ວ");}
     catch(err){toast("ບໍ່ສຳເລັດ: "+err.code);}
     return;
   }
@@ -480,7 +487,7 @@ $("#stafflist").addEventListener("click",async e=>{
     catch(err){toast("ສົ່ງບໍ່ໄດ້: "+err.code);}return;}
   if(tg){const off=tg.dataset.off==="1";
     if(!confirm(off?"ເປີດໃຫ້ບັນຊີນີ້ເຂົ້າລະບົບໄດ້ອີກ?":"ປິດບໍ່ໃຫ້ບັນຊີນີ້ເຂົ້າລະບົບ?"))return;
-    try{await setDoc(doc(db,"staff",tg.dataset.tog),{active:off},{merge:true});
+    try{await setDoc(doc(db,"staff",staffDocId(tg.dataset.tog)),{email:tg.dataset.tog,active:off},{merge:true});
       toast(off?"ເປີດໃຊ້ງານແລ້ວ":"ປິດການໃຊ້ງານແລ້ວ");}catch(err){toast("ບໍ່ສຳເລັດ: "+err.code);}}
 });
 
@@ -521,7 +528,7 @@ $("#btnProfSave").onclick=async()=>{
   if(!profEmail)return;
   const b=$("#btnProfSave");b.disabled=true;
   try{
-    await setDoc(doc(db,"staff",profEmail),{
+    await setDoc(doc(db,"staff",staffDocId(profEmail)),{
       email:profEmail,
       name:$("#prof-name").value.trim(),
       title:$("#prof-title").value.trim(),
@@ -556,11 +563,11 @@ onAuthStateChanged(auth,user=>{
     $("#who").textContent=user.email;
     $("#pass").value="";
     applyRole();
-    /* ສ້າງໂປຣໄຟລ໌ເຉພາະກໍລະນີທີ່ຍັງບໍ່ມີເອກະສານ: ຢ່າປຸກບັນຊີທີ່ແອດມິນລຶບອອກແລ້ວ */
-    const myStaffRef=doc(db,"staff",(user.email||"").toLowerCase());
-    getDoc(myStaffRef).then(snap=>{
-      if(!snap.exists())return setDoc(myStaffRef,{email:(user.email||"").toLowerCase(),active:true});
-    }).catch(()=>{});
+    /* ຖ້າຍັງບໍ່ມີແຖວຂອງຕົນເອງ ໃຫ້ສ້າງໄວ້ ເພື່ອຕັ້ງໂປຣໄຟລ໌ໄດ້ */
+    setTimeout(()=>{
+      const em=(user.email||"").toLowerCase();
+      setDoc(doc(db,"staff",staffDocId(em)),{email:em,active:true},{merge:true}).catch(()=>{});
+    },1500);
     if(!manager){
       document.querySelectorAll(".view").forEach(v=>v.classList.remove("on"));
       $("#v-add").classList.add("on");
@@ -581,6 +588,7 @@ onAuthStateChanged(auth,user=>{
       const c=d.data()||{};
       const t=c.banner||"";
       $("#banner").textContent=t;$("#banner").classList.toggle("hide",!t);
+      setTimeout(syncHeaderHeight,60);
       $("#ad-banner").value=t;
       PROJECTS=Array.isArray(c.projects)?c.projects:[];
       renderProjects();
