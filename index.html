@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Phetsarath:wght@400;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=8">
+<link rel="stylesheet" href="style.css?v=16">
 </head>
 <body>
 
@@ -109,6 +109,17 @@
           <textarea class="input" id="a-note" placeholder="ເຊັ່ນ: ຖາມລາຄາຕອນໜ້າຕິດຖະໜົນ"></textarea></label>
         <button class="btn orange" id="btnAdd">+ ເພີ່ມລູກຄ້າ</button>
       </div>
+
+      <aside class="card" id="sidecard">
+        <p class="eyebrow">ຜົນງານຂອງເຈົ້າ</p>
+        <div class="tstats">
+          <div><b class="num" id="t-today">0</b><span>ມື້ນີ້</span></div>
+          <div><b class="num" id="t-month">0</b><span>ເດືອນນີ້</span></div>
+          <div><b class="num" id="t-sold">0</b><span>ປິດຍອດ</span></div>
+        </div>
+        <p class="eyebrow" style="margin-top:18px">ບັນທຶກລ່າສຸດມື້ນີ້</p>
+        <div id="todaylist"></div>
+      </aside>
     </section>
 
     <section class="view" id="v-list">
@@ -252,6 +263,6 @@
 <div class="toast" id="toast"></div>
 <div id="sheetprint"></div>
 
-<script type="module" src="app.js?v=8"></script>
+<script type="module" src="app.js?v=16"></script>
 </body>
 </html>
