@@ -1,0 +1,17 @@
+{
+  "name": "ສະຖິຕິລູກຄ້າ — U-SABAI LAND AND HOUSE",
+  "short_name": "U-SABAI",
+  "description": "ບັນທຶກ ຕິດຕາມ ແລະ ສະຫຼຸບຍອດລູກຄ້າ ໂຄງການດິນຈັດສັນ",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#16255A",
+  "theme_color": "#C4620E",
+  "lang": "lo",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

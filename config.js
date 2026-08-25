@@ -15,7 +15,7 @@
    ══════════════════════════════════════════════════════════════ */
 
 export const MANAGERS = [
-  "bounmy2899@gmail.com"
+  "bounmy@gmail.com"
 ];
 
 
