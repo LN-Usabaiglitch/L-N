@@ -58,6 +58,21 @@ const nPeople=n=>`${n}<i class="unit">ຄົນ</i>`;
 const PALETTE=["#C4620E","#16255A","#2E6B4C","#8A2BE2","#0E7490","#B3261E","#B7791F","#4C51BF","#0F766E","#9D174D"];
 const colorOf=(s,i)=>PALETTE[(i>=0?i:0)%PALETTE.length];
 
+/* ══ ສະຖານະ / ຄຳຕິຊົມ — 2 ຄ່າຫຼັກ + ທີ່ຜູ້ດູແລເພີ່ມເອງ ══ */
+const BASE_STATUS=[{id:"open",label:"ສົນໃຈ / ຖາມ"},{id:"sold",label:"ປິດຍອດຂາຍແລ້ວ"}];
+let CUSTOM_STATUS=[];
+const allStatus=()=>[...BASE_STATUS,...CUSTOM_STATUS.map(x=>({id:x,label:x}))];
+const statusLabel=id=>{const f=allStatus().find(x=>x.id===id);return f?f.label:(id||"ສົນໃຈ / ຖາມ");};
+const statusClass=id=>id==="sold"?"sold":(id==="open"?"open":"other");
+const statusColor=id=>{const i=allStatus().findIndex(x=>x.id===id);
+  return id==="sold"?"var(--green)":(id==="open"?"var(--navy)":colorOf(id,i<0?0:i));};
+function fillStatusSeg(sel,attr,cur){
+  const list=allStatus();
+  $(sel).innerHTML=(attr==="f"?`<button type="button" data-f="all">ທັງໝົດ</button>`:"")
+    +list.map(x=>`<button type="button" class="${x.id==="sold"?"buy":""}" data-${attr}="${esc(x.id)}">${esc(x.label)}</button>`).join("");
+  segSet(sel,cur);
+}
+
 function tagHTML(email,extra){
   const p=picOf(email);
   return p?`<span class="tag pic ${extra||""}" style="background-image:url('${p}')"></span>`
@@ -116,6 +131,7 @@ function projValue(sel,other){
   return $(other).value.trim()||NOPROJ;
 }
 fillProjects("#a-project"); fillProjects("#e-project");
+fillStatusSeg("#a-seg","s","open"); fillStatusSeg("#e-seg","s","open"); fillStatusSeg("#l-seg","f","all");
 bindOther("#a-project","#a-project-other"); bindOther("#e-project","#e-project-other");
 
 /* ---------- ວັນທີແບບຕົວເລກສາກົນ (ຄືກັນທຸກເຄື່ອງ) ---------- */
@@ -248,7 +264,7 @@ function renderList(){
   const rows=items.filter(it=>inM(it)&&matches(it,q)&&(listFilter==="all"||(!it.deleted&&it.status===listFilter)));
   $("#list").innerHTML=rows.length?rows.map(it=>{
     const lb=labelOf(it);
-    const cls=it.deleted?"gone":(it.status==="sold"?"sold":"open");
+    const cls=it.deleted?"gone":statusClass(it.status||"open");
     const proj=(it.project&&it.project!==NOPROJ)?` · ${esc(it.project)}`:"";
     return `<button class="item ${it.deleted?"gone":""}" data-id="${it.id}">
       ${tagHTML(it.by,cls)}
@@ -291,7 +307,7 @@ function openRec(id){
   $("#e-project-other").classList.toggle("hide",known);
   setDate("#e-y","#e-m","#e-d",it.date||today());
   $("#e-note").value=it.note||"";
-  segSet("#e-seg",editStatus);
+  fillStatusSeg("#e-seg","s",editStatus);
   $("#roMeta").innerHTML=`<div><span>ເພີ່ມໂດຍ</span><b>${esc(who(it.by))}</b></div>
     ${it.deleted?`<div><span style="color:var(--red)">ຖືກລຶບໂດຍ</span><b style="color:var(--red)">${esc(who(it.deletedBy))}</b></div>`:""}`;
   $("#btnRestore").classList.toggle("hide",!(manager&&it.deleted));
@@ -342,77 +358,98 @@ function fillMonths(sel){
 }
 
 $("#s-month").addEventListener("change",renderSummary);
-function bar(label,n,max,color){
+$("#s-project").addEventListener("change",renderSummary);
+function bar(label,n,max,color,pct){
   const c=color||"var(--orange)";
-  return `<div class="pbar"><div class="top"><span><i class="dot" style="background:${c}"></i>${esc(label)}</span><b class="num">${nPeople(n)}</b></div>
+  const p=(pct==null)?"":`<span class="pct">${pct}%</span>`;
+  return `<div class="pbar"><div class="top"><span><i class="dot" style="background:${c}"></i>${esc(label)}</span><b class="num">${nPeople(n)}${p}</b></div>
     <div class="track"><div class="fill" style="width:${max?Math.round(n/max*100):0}%;background:${c}"></div></div></div>`;
 }
+
 function renderSummary(){
-  if(!manager)return;
   fillMonths("#s-month");
-  const mk=$("#s-month").value;
+  fillSumProjects();
+  const mk=$("#s-month").value, pj=$("#s-project").value||"all";
   const inM=it=>mk==="all"||(it.date||"").startsWith(mk);
-  const rows=alive().filter(inM).sort((a,b)=>(a.date||"").localeCompare(b.date||""));
-  const gone=items.filter(i=>i.deleted&&inM(i));
+  const inP=it=>pj==="all"||(it.project||NOPROJ)===pj;
+  const inScope=it=>inM(it)&&inP(it);
+
+  const rows=alive().filter(inScope).sort((a,b)=>(a.date||"").localeCompare(b.date||""));
+  const gone=items.filter(i=>i.deleted&&inScope(i));
+  const total=rows.length;
   const sold=rows.filter(r=>r.status==="sold").length;
-  $("#s-total").innerHTML=nPeople(rows.length);
+  const open=rows.filter(r=>(r.status||"open")==="open").length;
+  const pc=n=>total?Math.round(n/total*100):0;
+
+  $("#s-total").innerHTML=nPeople(total);
   $("#s-sold").innerHTML=nPeople(sold);
-  $("#s-open").innerHTML=nPeople(rows.length-sold);
-  $("#s-rate").textContent=(rows.length?Math.round(sold/rows.length*100):0)+"%";
+  $("#s-open").innerHTML=nPeople(open);
   $("#s-del").innerHTML=nPeople(gone.length);
 
-  const allProj=[...new Set([...PROJECTS, ...rows.map(r=>r.project||NOPROJ)])];
+  /* ── ສະຖານະລູກຄ້າ: ແທ່ງທຽບກັນ + ເປີເຊັນ ── */
+  const stCounts=allStatus().map(x=>({...x,n:rows.filter(r=>(r.status||"open")===x.id).length}))
+    .filter(x=>x.n>0).sort((a,b)=>b.n-a.n);
+  const stMax=Math.max(1,...stCounts.map(x=>x.n));
+  $("#bystatus").innerHTML=stCounts.length
+    ? stCounts.map(x=>bar(x.label,x.n,stMax,statusColor(x.id),pc(x.n))).join("")
+    : `<div class="empty">ບໍ່ມີຂໍ້ມູນ</div>`;
+
+  /* ── ສະຖານະທີ່ພົບຫຼາຍສຸດ ── */
+  if(stCounts.length){
+    $("#s-top").textContent=pc(stCounts[0].n)+"%";
+    $("#s-toplab").textContent=stCounts[0].label;
+  }else{
+    $("#s-top").textContent="—";
+    $("#s-toplab").textContent="ສະຖານະທີ່ພົບຫຼາຍສຸດ";
+  }
+
+  /* ── ໂຄງການ + ເປີເຊັນ ── */
+  const allProj=[...new Set([...PROJECTS,...rows.map(r=>r.project||NOPROJ)])];
   const counts=allProj.map(p=>({p,n:rows.filter(r=>(r.project||NOPROJ)===p).length}))
     .filter(x=>x.n>0).sort((a,b)=>b.n-a.n);
   const mx=Math.max(1,...counts.map(c=>c.n));
-  $("#byproject").innerHTML=counts.length?counts.map((c,i)=>bar(c.p,c.n,mx,colorOf(c.p,i))).join(""):`<div class="empty">ບໍ່ມີຂໍ້ມູນ</div>`;
+  $("#byproject").innerHTML=counts.length
+    ? counts.map((c,i)=>bar(c.p,c.n,mx,colorOf(c.p,i),pc(c.n))).join("")
+    : `<div class="empty">ບໍ່ມີຂໍ້ມູນ</div>`;
 
-  /* ລູກຄ້າແຕ່ລະຄົນ — ຮູບໂປຣໄຟລ໌ຜູ້ເພີ່ມ + ຂອບສີສົ້ມໜາ; ເບີໂທຢູ່ເທິງ ຊື່ເຕັມຢູ່ລຸ່ມ */
-  $("#plots").innerHTML=rows.length?rows.map(it=>{
-    const lb=labelOf(it), p=picOf(it.by);
-    const av=p?`<span class="pav" style="background-image:url('${p}')"></span>`
-              :`<span class="pav">${PERSON}</span>`;
-    return `<button class="plot ${it.status==="sold"?"sold":"open"}" data-id="${it.id}" title="${esc(lb)} · ${esc(fmtPhone(it.phone))} · ເພີ່ມໂດຍ ${esc(who(it.by))}">
-      ${av}
-      <span class="pph num">${esc(fmtPhone(it.phone))}</span>
-      <span class="pnm">${esc(lb)}</span></button>`;
+  /* ── ລາຍຊື່ລູກຄ້າ: ຊື່ + ເບີ + (ໃຜເພີ່ມ) ── */
+  $("#custlist").innerHTML=rows.length?rows.map(it=>{
+    const lb=labelOf(it), st=it.status||"open";
+    return `<button class="item" data-id="${it.id}">
+      ${tagHTML(it.by,statusClass(st))}
+      <span class="meta">
+        <span class="nm">${esc(lb)} <i class="stbadge" style="background:${statusColor(st)}">${esc(statusLabel(st))}</i></span>
+        <span class="ph num">${esc(fmtPhone(it.phone))}</span>
+        <span class="sub">(${esc(who(it.by))})${it.project&&it.project!==NOPROJ?" · "+esc(it.project):""}</span>
+      </span>
+      <span class="dt num">${esc(it.date||"")}</span></button>`;
   }).join(""):`<div class="empty">ບໍ່ມີຂໍ້ມູນ</div>`;
 
-  const ems=[...new Set(items.filter(inM).map(i=>i.by).filter(Boolean))];
+  /* ── ຜົນງານແຕ່ລະຄົນ ── */
+  const ems=[...new Set(items.filter(inScope).map(i=>i.by).filter(Boolean))];
   $("#byuser").innerHTML=ems.length?ems.map((em,i)=>{
-    const a=rows.filter(r=>r.by===em),s=a.filter(r=>r.status==="sold").length;
-    const d=items.filter(x=>x.deleted&&inM(x)&&x.deletedBy===em).length;
+    const a=rows.filter(r=>r.by===em),sd=a.filter(r=>r.status==="sold").length;
+    const d=items.filter(x=>x.deleted&&inScope(x)&&x.deletedBy===em).length;
     const c=colorOf(em,i);
     return `<div class="item" style="border-left:5px solid ${c};padding-left:10px">${tagHTML(em)}
       <span class="meta"><span class="nm">${esc(who(em))}</span>
-      <span class="sub num">ເພີ່ມ ${a.length} ຄົນ · ຂາຍໄດ້ ${s} ຄົນ · ລຶບ ${d} ຄົນ</span></span></div>`;
+      <span class="sub num">ເພີ່ມ ${a.length} ຄົນ · ຂາຍໄດ້ ${sd} ຄົນ · ຍົກເລີກ ${d} ຄົນ</span></span></div>`;
   }).join(""):`<div class="empty">ບໍ່ມີຂໍ້ມູນ</div>`;
 
+  /* ── ລາຍການທີ່ຍົກເລີກ ── */
   $("#deleted").innerHTML=gone.length?gone.map(it=>`
     <button class="item gone" data-id="${it.id}">${tagHTML(it.by,"gone")}
       <span class="meta"><span class="nm">ຊື່ລູກຄ້າ: ${esc(labelOf(it))}</span><span class="ph num">ເບີ ${esc(fmtPhone(it.phone))}</span>
-      <span class="sub warn">ລຶບໂດຍ ${esc(who(it.deletedBy))}</span></span>
-      <span class="dt num">${esc(it.date||"")}</span></button>`).join(""):`<div class="empty">ບໍ່ມີລາຍການທີ່ຖືກລຶບ</div>`;
+      <span class="sub warn">ຍົກເລີກໂດຍ ${esc(who(it.deletedBy))}</span></span>
+      <span class="dt num">${esc(it.date||"")}</span></button>`).join(""):`<div class="empty">ບໍ່ມີລາຍການທີ່ຍົກເລີກ</div>`;
 }
 
-/* ---------- ກ່ອງຜົນງານຂອງຕົນເອງ (ຂ້າງຟອມ) ---------- */
-function renderToday(){
-  const u=auth.currentUser; if(!u) return;
-  const me=(u.email||"").toLowerCase();
-  const mine=alive().filter(i=>(i.by||"").toLowerCase()===me);
-  const td=today(), mk=td.slice(0,7);
-  const dayRows=mine.filter(i=>i.date===td);
-  const monRows=mine.filter(i=>(i.date||"").startsWith(mk));
-  $("#t-today").innerHTML=nPeople(dayRows.length);
-  $("#t-month").innerHTML=nPeople(monRows.length);
-  $("#t-sold").innerHTML=nPeople(monRows.filter(i=>i.status==="sold").length);
-  $("#todaylist").innerHTML=dayRows.length?dayRows.slice(0,8).map(it=>{
-    const lb=labelOf(it);
-    return `<button class="item" data-id="${it.id}">
-      ${tagHTML(it.by,it.status==="sold"?"sold":"open")}
-      <span class="meta"><span class="nm">ຊື່ລູກຄ້າ: ${esc(lb)}</span>
-      <span class="ph num">ເບີ ${esc(fmtPhone(it.phone))}</span></span></button>`;
-  }).join(""):`<div class="empty" style="padding:18px 8px;font-size:14px">ມື້ນີ້ຍັງບໍ່ທັນບັນທຶກ</div>`;
+function fillSumProjects(){
+  const el=$("#s-project"); if(!el) return;
+  const keep=el.value;
+  const present=[...new Set([...PROJECTS,...items.map(i=>i.project||NOPROJ)])].filter(Boolean);
+  el.innerHTML=`<option value="all">ທຸກໂຄງການ</option>`+present.map(p=>`<option value="${esc(p)}">${esc(p)}</option>`).join("");
+  el.value=(keep&&(keep==="all"||present.includes(keep)))?keep:"all";
 }
 
 const renderAll=()=>{fillMonths("#m-month");renderList();renderSummary();renderToday();$("#a-hint").textContent="A"+nextNum();};
@@ -431,18 +468,18 @@ $("#btnPrint").onclick=()=>{
       <div><b>${sold}</b><span>ປິດຍອດຂາຍແລ້ວ</span></div>
       <div><b>${rows.length-sold}</b><span>ຜູ້ສົນໃຈ</span></div>
       <div><b>${rows.length?Math.round(sold/rows.length*100):0}%</b><span>ອັດຕາປິດການຂາຍ</span></div>
-      <div><b>${gone.length}</b><span>ຖືກລຶບ</span></div>
+      <div><b>${gone.length}</b><span>ຍົກເລີກ</span></div>
     </div>
     <table><thead><tr><th style="width:6%">ລຳດັບ</th><th style="width:12%">ວັນທີ</th><th style="width:15%">ລູກຄ້າ</th>
       <th style="width:15%">ເບີໂທ</th><th style="width:10%">ສະຖານະ</th><th style="width:14%">ໂຄງການ</th>
       <th style="width:12%">ຜູ້ບັນທຶກ</th><th>ໝາຍເຫດ</th></tr></thead><tbody>
       ${rows.map((r,i)=>`<tr><td>${i+1}</td><td>${esc(r.date||"")}</td><td>${esc(labelOf(r))}</td>
-        <td>${esc(r.phone||"")}</td><td>${r.status==="sold"?"ຊື້ແລ້ວ":"ສົນໃຈ"}</td>
+        <td>${esc(r.phone||"")}</td><td>${esc(statusLabel(r.status||"open"))}</td>
         <td>${esc(r.project||"—")}</td><td>${esc(who(r.by))}</td><td>${esc(r.note||"")}</td></tr>`).join("")
         ||`<tr><td colspan="8" style="text-align:center">ບໍ່ມີຂໍ້ມູນ</td></tr>`}
       ${gone.map(r=>`<tr class="gone"><td>–</td><td>${esc(r.date||"")}</td><td>${esc(labelOf(r))}</td>
-        <td>${esc(r.phone||"")}</td><td>ຖືກລຶບ</td><td>${esc(r.project||"—")}</td>
-        <td>${esc(who(r.by))}</td><td>ລຶບໂດຍ ${esc(who(r.deletedBy))}</td></tr>`).join("")}
+        <td>${esc(r.phone||"")}</td><td>ຍົກເລີກ</td><td>${esc(r.project||"—")}</td>
+        <td>${esc(who(r.by))}</td><td>ຍົກເລີກໂດຍ ${esc(who(r.deletedBy))}</td></tr>`).join("")}
     </tbody></table>
     <div class="sig"><div>ຜູ້ລາຍງານ<br><br>............................................<br>ວັນທີ ......../......../........</div></div>`;
   print();
@@ -457,6 +494,35 @@ function renderProjects(){
 async function saveProjects(list){
   await setDoc(CFG,{projects:list,by:auth.currentUser.email,at:serverTimestamp()},{merge:true});
 }
+function renderStatuses(){
+  const el=$("#statlist"); if(!el) return;
+  el.innerHTML=BASE_STATUS.map(x=>`
+      <div class="item"><span class="meta"><span class="nm">${esc(x.label)}</span>
+        <span class="sub">ຄ່າຫຼັກ</span></span></div>`).join("")
+    + (CUSTOM_STATUS.length?CUSTOM_STATUS.map(x=>`
+      <div class="item"><span class="meta"><span class="nm">${esc(x)}</span></span>
+        <button class="btn danger sm" data-delstat="${esc(x)}">ລຶບ</button></div>`).join(""):"");
+}
+async function saveStatuses(list){
+  await setDoc(CFG,{statuses:list,by:auth.currentUser.email,at:serverTimestamp()},{merge:true});
+}
+$("#btnAddStat").onclick=async()=>{
+  const v=$("#ad-stat").value.trim();
+  if(!v){toast("ໃສ່ຊື່ສະຖານະກ່ອນ");return;}
+  if(CUSTOM_STATUS.includes(v)||BASE_STATUS.some(x=>x.label===v)){toast("ມີສະຖານະນີ້ແລ້ວ");return;}
+  const b=$("#btnAddStat");b.disabled=true;
+  try{await saveStatuses([...CUSTOM_STATUS,v]);$("#ad-stat").value="";toast("ເພີ່ມສະຖານະແລ້ວ ✓");}
+  catch(e){toast("ບໍ່ສຳເລັດ: "+e.code);}
+  b.disabled=false;
+};
+$("#statlist").addEventListener("click",async e=>{
+  const b=e.target.closest("[data-delstat]"); if(!b)return;
+  const v=b.dataset.delstat;
+  if(!confirm(`ລຶບ “${v}” ອອກຈາກລາຍການເລືອກ?\nລູກຄ້າເກົ່າທີ່ໃຊ້ສະຖານະນີ້ຈະຍັງຢູ່ຄືເກົ່າ`))return;
+  try{await saveStatuses(CUSTOM_STATUS.filter(x=>x!==v));toast("ລຶບແລ້ວ");}
+  catch(err){toast("ບໍ່ສຳເລັດ: "+err.code);}
+});
+
 $("#btnAddProj").onclick=async()=>{
   const v=$("#ad-proj").value.trim();
   if(!v){toast("ໃສ່ຊື່ໂຄງການກ່ອນ");return;}
@@ -593,7 +659,7 @@ function applyRole(){
   $("#roleTag").textContent=isOwner(u.email)?"ເຈົ້າຂອງລະບົບ":(manager?"ຜູ້ດູແລ":"ພະນັກງານ");
   const mypic=picOf(u.email);
   $("#who").innerHTML=(mypic?`<span class="hpic" style="background-image:url('${mypic}')"></span>`:"")+esc(who(u.email)||u.email);
-  $("#navSum").classList.toggle("hide",!manager);
+  $("#navSum").classList.remove("hide");
   $("#navAdmin").classList.toggle("hide",!manager);
   if(was&&!manager){
     document.querySelectorAll(".view").forEach(v=>v.classList.remove("on"));
@@ -637,9 +703,14 @@ onAuthStateChanged(auth,user=>{
       setTimeout(syncHeaderHeight,60);
       $("#ad-banner").value=t;
       PROJECTS=Array.isArray(c.projects)?c.projects:[];
+      CUSTOM_STATUS=Array.isArray(c.statuses)?c.statuses:[];
       renderProjects();
+      renderStatuses();
       fillProjects("#a-project");
       $("#a-project-other").classList.toggle("hide",$("#a-project").value!==OTHER);
+      fillStatusSeg("#a-seg","s",addStatus);
+      fillStatusSeg("#l-seg","f",listFilter);
+      renderList();
       renderSummary();
     },()=>{});
   }else{
