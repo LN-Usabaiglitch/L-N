@@ -144,8 +144,10 @@ select.input{appearance:none;background-image:linear-gradient(45deg,transparent 
 .btn.sm-navy{background:var(--navy);color:#fff;font-weight:700}
 .row{display:flex;gap:10px}.row>*{flex:1}
 .seg{display:flex;border:1px solid var(--line);border-radius:10px;overflow:hidden;background:#fff}
-.seg.wrap{flex-wrap:wrap;gap:1px;background:var(--line)}
-.seg.wrap button{flex:1 1 44%;min-width:120px;background:#fff;padding:11px 8px}
+/* ── ຊ່ອງເພີ່ມສະຖານະໃໝ່ ── */
+.addrow{display:flex;gap:8px;margin-top:8px}
+.addrow .input{flex:1}
+.addrow .btn{flex:none;width:auto}
 .seg button{flex:1;padding:11px 6px;font-size:15px;color:var(--muted)}
 .seg button[aria-pressed="true"]{background:#E7EAF3;color:var(--navy);font-weight:700}
 .seg button.buy[aria-pressed="true"]{background:var(--green-s);color:var(--green)}

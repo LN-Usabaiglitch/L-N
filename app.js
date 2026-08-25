@@ -66,11 +66,46 @@ const statusLabel=id=>{const f=allStatus().find(x=>x.id===id);return f?f.label:(
 const statusClass=id=>id==="sold"?"sold":(id==="open"?"open":"other");
 const statusColor=id=>{const i=allStatus().findIndex(x=>x.id===id);
   return id==="sold"?"var(--green)":(id==="open"?"var(--navy)":colorOf(id,i<0?0:i));};
-function fillStatusSeg(sel,attr,cur){
+const ADDNEW="__add__";
+function fillStatusSel(sel,cur,opts){
+  opts=opts||{};
+  const el=$(sel); if(!el) return;
   const list=allStatus();
-  $(sel).innerHTML=(attr==="f"?`<button type="button" data-f="all">ທັງໝົດ</button>`:"")
-    +list.map(x=>`<button type="button" class="${x.id==="sold"?"buy":""}" data-${attr}="${esc(x.id)}">${esc(x.label)}</button>`).join("");
-  segSet(sel,cur);
+  el.innerHTML=(opts.withAll?`<option value="all">ທັງໝົດ</option>`:"")
+    +list.map(x=>`<option value="${esc(x.id)}">${esc(x.label)}</option>`).join("")
+    +(opts.withAdd?`<option value="${ADDNEW}">+ ເພີ່ມລາຍການໃໝ່</option>`:"");
+  const ok=[...el.options].some(o=>o.value===cur);
+  el.value=ok?cur:(opts.withAll?"all":"open");
+}
+
+/* ເລືອກ “+ ເພີ່ມລາຍການໃໝ່” → ເປີດຊ່ອງພິມ; ບັນທຶກແລ້ວທຸກຄົນເຫັນ */
+function bindStatusAdd(sel,addBox,input,saveBtn,onPicked){
+  $(sel).addEventListener("change",()=>{
+    const v=$(sel).value;
+    $(addBox).classList.toggle("hide",v!==ADDNEW);
+    if(v===ADDNEW){ $(input).value=""; $(input).focus(); }
+    else onPicked(v);
+  });
+  const save=async()=>{
+    const v=$(input).value.trim();
+    if(!v){ toast("ພິມຊື່ສະຖານະກ່ອນ"); $(input).focus(); return; }
+    if(BASE_STATUS.some(x=>x.label===v)||CUSTOM_STATUS.includes(v)){
+      toast("ມີສະຖານະນີ້ແລ້ວ");
+      fillStatusSel(sel,v,{withAdd:true}); $(addBox).classList.add("hide"); onPicked(v); return;
+    }
+    $(saveBtn).disabled=true;
+    try{
+      await saveStatuses([...CUSTOM_STATUS,v]);
+      CUSTOM_STATUS=[...CUSTOM_STATUS,v];
+      fillStatusSel(sel,v,{withAdd:true});
+      $(addBox).classList.add("hide");
+      onPicked(v);
+      toast("ເພີ່ມສະຖານະແລ້ວ ✓");
+    }catch(e){ toast("ບັນທຶກບໍ່ໄດ້: "+(e.code||e.message)); }
+    $(saveBtn).disabled=false;
+  };
+  $(saveBtn).onclick=save;
+  $(input).addEventListener("keydown",e=>{ if(e.key==="Enter"){ e.preventDefault(); save(); } });
 }
 
 function tagHTML(email,extra){
@@ -131,7 +166,12 @@ function projValue(sel,other){
   return $(other).value.trim()||NOPROJ;
 }
 fillProjects("#a-project"); fillProjects("#e-project");
-fillStatusSeg("#a-seg","s","open"); fillStatusSeg("#e-seg","s","open"); fillStatusSeg("#l-seg","f","all");
+fillStatusSel("#a-status","open",{withAdd:true});
+fillStatusSel("#e-status","open",{withAdd:true});
+fillStatusSel("#l-status","all",{withAll:true});
+bindStatusAdd("#a-status","#a-status-add","#a-status-new","#a-status-save",v=>{addStatus=v;});
+bindStatusAdd("#e-status","#e-status-add","#e-status-new","#e-status-save",v=>{editStatus=v;});
+$("#l-status").addEventListener("change",()=>{listFilter=$("#l-status").value;renderList();});
 bindOther("#a-project","#a-project-other"); bindOther("#e-project","#e-project-other");
 
 /* ---------- ວັນທີແບບຕົວເລກສາກົນ (ຄືກັນທຸກເຄື່ອງ) ---------- */
@@ -232,7 +272,6 @@ $("#nav").addEventListener("click",e=>{
   $("#v-"+b.dataset.v).classList.add("on");scrollTo(0,0);
 });
 
-segBind("#a-seg",v=>addStatus=v);
 $("#btnAdd").onclick=async()=>{
   const phone=$("#a-phone").value.trim();
   if(!phone){toast("ກະລຸນາໃສ່ເບີໂທ");$("#a-phone").focus();return;}
@@ -244,14 +283,13 @@ $("#btnAdd").onclick=async()=>{
       by:auth.currentUser.email,deleted:false,createdAt:serverTimestamp()});
     $("#a-phone").value="";$("#a-name").value="";$("#a-note").value="";$("#a-project-other").value="";
     setDate("#a-y","#a-m","#a-d",today());$("#a-project").value=NOPROJ;$("#a-project-other").classList.add("hide");
-    segSet("#a-seg","open");addStatus="open";
+    fillStatusSel("#a-status","open",{withAdd:true});$("#a-status-add").classList.add("hide");addStatus="open";
     toast("ບັນທຶກແລ້ວ ✓");
   }catch(e){toast("ບັນທຶກບໍ່ໄດ້: "+(AUTH_ERR[e.code]||e.code));}
   b.disabled=false;
 };
 
 $("#q").addEventListener("input",renderList);
-segBind("#l-seg",v=>{listFilter=v;renderList();});
 $("#m-month").addEventListener("change",renderList);
 function matches(it,q){if(!q)return true;
   const d=q.replace(/\D/g,"");
@@ -279,7 +317,6 @@ document.addEventListener("click",e=>{
   const b=e.target.closest(".item[data-id], .plot[data-id]");if(!b)return;openRec(b.dataset.id);
 });
 
-segBind("#e-seg",v=>editStatus=v);
 function openRec(id){
   const it=items.find(x=>x.id===id);if(!it)return;
   editId=id;$("#editerr").classList.remove("on");
@@ -307,7 +344,7 @@ function openRec(id){
   $("#e-project-other").classList.toggle("hide",known);
   setDate("#e-y","#e-m","#e-d",it.date||today());
   $("#e-note").value=it.note||"";
-  fillStatusSeg("#e-seg","s",editStatus);
+  fillStatusSel("#e-status",editStatus,{withAdd:true});$("#e-status-add").classList.add("hide");
   $("#roMeta").innerHTML=`<div><span>ເພີ່ມໂດຍ</span><b>${esc(who(it.by))}</b></div>
     ${it.deleted?`<div><span style="color:var(--red)">ຖືກລຶບໂດຍ</span><b style="color:var(--red)">${esc(who(it.deletedBy))}</b></div>`:""}`;
   $("#btnRestore").classList.toggle("hide",!(manager&&it.deleted));
@@ -708,8 +745,8 @@ onAuthStateChanged(auth,user=>{
       renderStatuses();
       fillProjects("#a-project");
       $("#a-project-other").classList.toggle("hide",$("#a-project").value!==OTHER);
-      fillStatusSeg("#a-seg","s",addStatus);
-      fillStatusSeg("#l-seg","f",listFilter);
+      fillStatusSel("#a-status",addStatus,{withAdd:true});
+      fillStatusSel("#l-status",listFilter,{withAll:true});
       renderList();
       renderSummary();
     },()=>{});

@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Phetsarath:wght@400;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=17">
+<link rel="stylesheet" href="style.css?v=18">
 </head>
 <body>
 
@@ -92,7 +92,11 @@
         <label class="f"><span>ຊື່ລູກຄ້າ <span class="chip" id="a-hint">A1</span></span>
           <input class="input" id="a-name" placeholder="ຮູ້ຊື່ແລ້ວພິມທັບລະຫັດໄດ້ເລີຍ"></label>
         <label class="f"><span>ສະຖານະ</span>
-          <div class="seg wrap" id="a-seg"></div></label>
+          <select class="input" id="a-status"></select>
+          <div class="addrow hide" id="a-status-add">
+            <input class="input" id="a-status-new" placeholder="ພິມສະຖານະໃໝ່ ເຊັ່ນ: ພື້ນທີ່ແພງເກີນໄປ">
+            <button class="btn sm" type="button" id="a-status-save">ບັນທຶກ</button>
+          </div></label>
         <label class="f"><span>ໂຄງການທີ່ລູກຄ້າສົນໃຈ</span>
           <select class="input" id="a-project"></select>
           <input class="input hide" id="a-project-other" style="margin-top:8px" placeholder="ພິມຊື່ໂຄງການ ຫຼື ສິ່ງທີ່ລູກຄ້າສົນໃຈ"></label>
@@ -108,7 +112,7 @@
       </div>
 
       <aside class="card" id="sidecard">
-        <p class="eyebrow">ຜົນງານຂອງເຈົ້າ</p>
+        <p class="eyebrow">ລາຍການທີ່ບັນທຶກ</p>
         <div class="tstats">
           <div><b class="num" id="t-today">0</b><span>ມື້ນີ້</span></div>
           <div><b class="num" id="t-month">0</b><span>ເດືອນນີ້</span></div>
@@ -128,7 +132,7 @@
         <p class="eyebrow">ຄົ້ນຫາ</p>
         <input class="input num" id="q" type="search" inputmode="tel" placeholder="ພິມເບີໂທ ຫຼື ຊື່ລູກຄ້າ">
         <div style="height:8px"></div>
-        <div class="seg wrap" id="l-seg"></div>
+        <select class="input" id="l-status"></select>
       </div>
       <div class="card"><div id="list"></div></div>
     </section>
@@ -152,7 +156,7 @@
       <div class="card"><p class="eyebrow">ສະຖານະລູກຄ້າ — ທຽບກັນ</p><div id="bystatus"></div></div>
       <div class="card"><p class="eyebrow">ໂຄງການທີ່ຖືກຖາມຫຼາຍທີ່ສຸດ</p><div id="byproject"></div></div>
       <div class="card"><p class="eyebrow">ລາຍຊື່ລູກຄ້າ</p><div id="custlist"></div></div>
-      <div class="card"><p class="eyebrow">ຜົນງານແຕ່ລະຄົນ</p><div id="byuser"></div></div>
+      <div class="card"><p class="eyebrow">ລາຍການບັນທຶກແຕ່ລະຄົນ</p><div id="byuser"></div></div>
       <div class="card"><p class="eyebrow">ລາຍການທີ່ຍົກເລີກ (ພິມເບີຜິດ)</p><div id="deleted"></div></div>
       <div class="card"><button class="btn ghost" id="btnPrint">🖨 ພິມລາຍງານ / PDF</button></div>
     </section>
@@ -209,7 +213,11 @@
     <label class="f"><span>ເບີໂທລະສັບ</span><input class="input num" id="e-phone" type="tel" inputmode="tel"></label>
     <label class="f"><span>ຊື່ລູກຄ້າ (ລຶບຊື່ອອກ = ໃຊ້ລະຫັດອັດຕະໂນມັດ)</span><input class="input" id="e-name"></label>
     <label class="f"><span>ສະຖານະ</span>
-      <div class="seg wrap" id="e-seg"></div></label>
+      <select class="input" id="e-status"></select>
+      <div class="addrow hide" id="e-status-add">
+        <input class="input" id="e-status-new" placeholder="ພິມສະຖານະໃໝ່">
+        <button class="btn sm" type="button" id="e-status-save">ບັນທຶກ</button>
+      </div></label>
     <label class="f"><span>ໂຄງການ</span>
       <select class="input" id="e-project"></select>
       <input class="input hide" id="e-project-other" style="margin-top:8px" placeholder="ພິມຊື່ໂຄງການ"></label>
@@ -265,6 +273,6 @@
 <div class="toast" id="toast"></div>
 <div id="sheetprint"></div>
 
-<script type="module" src="app.js?v=17"></script>
+<script type="module" src="app.js?v=18"></script>
 </body>
 </html>
