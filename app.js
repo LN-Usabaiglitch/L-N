@@ -45,8 +45,24 @@ const staffDocId=e=>{const s=staffOf(e);return s?s.id:(e||"").toLowerCase();};
 const PERSON=`<svg class="ico-p" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 12.2a5.1 5.1 0 1 0 0-10.2 5.1 5.1 0 0 0 0 10.2Zm0 1.9c-4.5 0-8.2 2.3-8.2 5.1V22h16.4v-2.8c0-2.8-3.7-5.1-8.2-5.1Z"/></svg>`;
 
 /* ── ຈັດຮູບແບບເບີໂທ: 02056997280 → 020 5699 7280 ── */
+const PH_PREFIX="020";
+const NOPHONE="ບໍ່ມີເບີ";
+const digitsOf=p=>String(p??"").replace(/\D/g,"");
+const isNoPhone=it=>!!it.nophone||!digitsOf(it.phone);
+/* ເບີຖືກຕ້ອງ: ສ່ວນຫຼັງລະຫັດນຳໜ້າ ຕ້ອງ 7 ໂຕຂຶ້ນໄປ */
+function phoneOk(v){
+  const d=digitsOf(v);
+  if(!d) return false;
+  const sub=d.startsWith("0")?d.slice(3):d;
+  return sub.length>=7;
+}
+function samePhone(a,b){const x=digitsOf(a),y=digitsOf(b);return !!x&&x===y;}
+function findByPhone(v){const d=digitsOf(v);if(!d)return null;
+  return alive().find(i=>digitsOf(i.phone)===d)||null;}
+
 function fmtPhone(p){
   const d=String(p??"").replace(/\D/g,"");
+  if(!d) return NOPHONE;
   if(d.length===11&&d.startsWith("0")) return `${d.slice(0,3)} ${d.slice(3,7)} ${d.slice(7)}`;
   if(d.length===10&&d.startsWith("0")) return `${d.slice(0,3)} ${d.slice(3,6)} ${d.slice(6)}`;
   return String(p??"");
@@ -272,19 +288,58 @@ $("#nav").addEventListener("click",e=>{
   $("#v-"+b.dataset.v).classList.add("on");scrollTo(0,0);
 });
 
+/* ── ຊ່ອງເບີ: ຕັ້ງ 020 ໄວ້ລ່ວງໜ້າ / ປຸ່ມບໍ່ມີເບີ ── */
+function primePhone(){
+  const el=$("#a-phone");
+  if(!$("#a-nophone").checked && !el.value.trim()) el.value=PH_PREFIX+" ";
+}
+function bindNoPhone(chk,inp){
+  const sync=()=>{
+    const off=$(chk).checked;
+    $(inp).disabled=off;
+    $(inp).classList.toggle("off",off);
+    if(off) $(inp).value=""; else if(!$(inp).value.trim()) $(inp).value=PH_PREFIX+" ";
+  };
+  $(chk).addEventListener("change",sync);
+  return sync;
+}
+const syncAddPhone=bindNoPhone("#a-nophone","#a-phone");
+const syncEditPhone=bindNoPhone("#e-nophone","#e-phone");
+$("#a-phone").addEventListener("focus",primePhone);
+primePhone();
+
 $("#btnAdd").onclick=async()=>{
-  const phone=$("#a-phone").value.trim();
-  if(!phone){toast("ກະລຸນາໃສ່ເບີໂທ");$("#a-phone").focus();return;}
-  const {name,autoNum}=parseName($("#a-name").value,nextNum());
+  const noPhone=$("#a-nophone").checked;
+  const phone=noPhone?"":$("#a-phone").value.trim();
+  if(!noPhone){
+    if(!phone||phone===PH_PREFIX||phone===PH_PREFIX+" "){toast("ກະລຸນາໃສ່ເບີໂທ ຫຼື ຕິກ “ບໍ່ມີເບີໂທ”");$("#a-phone").focus();return;}
+    if(!phoneOk(phone)){toast("ເບີບໍ່ຄົບ — ຫຼັງ "+PH_PREFIX+" ຕ້ອງມີຢ່າງໜ້ອຍ 7 ໂຕ");$("#a-phone").focus();return;}
+  }
   const b=$("#btnAdd");b.disabled=true;
+  const proj=projValue("#a-project","#a-project-other");
+  const dt=getDate("#a-y","#a-m","#a-d");
+  const note=$("#a-note").value.trim();
+  const typedName=$("#a-name").value.trim();
   try{
-    await addDoc(COL,{phone,name,autoNum,status:addStatus,project:projValue("#a-project","#a-project-other"),
-      date:getDate("#a-y","#a-m","#a-d"),note:$("#a-note").value.trim(),
-      by:auth.currentUser.email,deleted:false,createdAt:serverTimestamp()});
-    $("#a-phone").value="";$("#a-name").value="";$("#a-note").value="";$("#a-project-other").value="";
+    const dup=noPhone?null:findByPhone(phone);
+    if(dup){
+      /* ── ເບີຊ້ຳ: ອັບເດດແຖວເກົ່າ ບໍ່ເພີ່ມໃໝ່ ── */
+      const patch={status:addStatus,project:proj,lastDate:dt,
+        lastBy:auth.currentUser.email,updatedAt:serverTimestamp()};
+      if(typedName){const p=parseName(typedName,dup.autoNum);patch.name=p.name;patch.autoNum=p.autoNum;}
+      if(note) patch.note=(dup.note?dup.note+"\n":"")+dt+" — "+note;
+      await updateDoc(doc(db,"customers",dup.id),patch);
+      toast("ເບີນີ້ມີແລ້ວ — ອັບເດດລູກຄ້າເກົ່າ ✓");
+    }else{
+      const {name,autoNum}=parseName(typedName,nextNum());
+      await addDoc(COL,{phone,name,autoNum,nophone:noPhone,status:addStatus,project:proj,
+        date:dt,lastDate:dt,note,by:auth.currentUser.email,deleted:false,createdAt:serverTimestamp()});
+      toast("ບັນທຶກແລ້ວ ✓");
+    }
+    $("#a-name").value="";$("#a-note").value="";$("#a-project-other").value="";
+    $("#a-nophone").checked=false;syncAddPhone();$("#a-phone").value=PH_PREFIX+" ";
     setDate("#a-y","#a-m","#a-d",today());$("#a-project").value=NOPROJ;$("#a-project-other").classList.add("hide");
     fillStatusSel("#a-status","open",{withAdd:true});$("#a-status-add").classList.add("hide");addStatus="open";
-    toast("ບັນທຶກແລ້ວ ✓");
   }catch(e){toast("ບັນທຶກບໍ່ໄດ້: "+(AUTH_ERR[e.code]||e.code));}
   b.disabled=false;
 };
@@ -335,7 +390,9 @@ function openRec(id){
   $("#sheetTitle").textContent="ແກ້ໄຂຂໍ້ມູນລູກຄ້າ";
   $("#viewOnly").classList.add("hide");$("#editForm").classList.remove("hide");
   editStatus=it.status||"open";
-  $("#e-phone").value=it.phone||"";
+  $("#e-nophone").checked=isNoPhone(it);
+  $("#e-phone").value=isNoPhone(it)?"":(it.phone||"");
+  syncEditPhone();
   $("#e-name").value=isAuto(it)?"":it.name;
   $("#e-name").placeholder=isAuto(it)?labelOf(it)+" (ພິມຊື່ຈິງທັບໄດ້)":"";
   const known=[NOPROJ,...PROJECTS].includes(it.project||NOPROJ);
@@ -358,7 +415,12 @@ $("#sheet").addEventListener("click",e=>{if(e.target===$("#sheet"))closeSheet();
 $("#btnSave").onclick=async()=>{
   if(!editId)return;const cur=items.find(x=>x.id===editId);
   const {name,autoNum}=parseName($("#e-name").value,isAuto(cur)?cur.autoNum:nextNum());
-  try{await updateDoc(doc(db,"customers",editId),{phone:$("#e-phone").value.trim(),name,autoNum,
+  const eNo=$("#e-nophone").checked;
+  const ePh=eNo?"":$("#e-phone").value.trim();
+  if(!eNo&&!phoneOk(ePh)){showErr("#editerr",{message:"ເບີບໍ່ຄົບ — ຫຼັງ "+PH_PREFIX+" ຕ້ອງມີຢ່າງໜ້ອຍ 7 ໂຕ"});return;}
+  const other=eNo?null:alive().find(x=>x.id!==editId&&samePhone(x.phone,ePh));
+  if(other){showErr("#editerr",{message:"ເບີນີ້ມີຢູ່ແລ້ວໃນລາຍຊື່ — ("+who(other.by)+" ເປັນຜູ້ບັນທຶກ)"});return;}
+  try{await updateDoc(doc(db,"customers",editId),{phone:ePh,nophone:eNo,name,autoNum,
       status:editStatus,project:projValue("#e-project","#e-project-other"),date:getDate("#e-y","#e-m","#e-d"),note:$("#e-note").value.trim()});
     closeSheet();toast("ແກ້ໄຂແລ້ວ ✓");
   }catch(e){showErr("#editerr",e);}
@@ -481,6 +543,183 @@ function renderSummary(){
       <span class="dt num">${esc(it.date||"")}</span></button>`).join(""):`<div class="empty">ບໍ່ມີລາຍການທີ່ຍົກເລີກ</div>`;
 }
 
+/* ══════════ ສະຫຼຸບລາຍວັນ ══════════ */
+function dayKeys(){
+  const set=new Set();
+  items.filter(i=>!i.deleted).forEach(i=>{ if(i.date)set.add(i.date); if(i.lastDate)set.add(i.lastDate); });
+  set.add(today());
+  return [...set].sort().reverse();
+}
+function fillDays(){
+  const el=$("#d-day"); if(!el) return;
+  const keep=el.value, ks=dayKeys();
+  el.innerHTML=ks.map(k=>`<option value="${k}">${k}</option>`).join("");
+  el.value=ks.includes(keep)?keep:(ks[0]||today());
+}
+function dayData(d){
+  const fresh=alive().filter(i=>i.date===d);
+  const upd=alive().filter(i=>i.lastDate===d&&i.date!==d);
+  const all=[...fresh,...upd];
+  return {d,fresh,upd,all,
+    sold:all.filter(i=>i.status==="sold").length,
+    nop:all.filter(isNoPhone).length};
+}
+function renderDaily(){
+  if(!$("#d-day")) return;
+  fillDays();
+  const D=dayData($("#d-day").value);
+  $("#d-total").innerHTML=nPeople(D.all.length);
+  $("#d-new").innerHTML=nPeople(D.fresh.length);
+  $("#d-upd").innerHTML=nPeople(D.upd.length);
+  $("#d-sold").innerHTML=nPeople(D.sold);
+  $("#d-nop").innerHTML=nPeople(D.nop);
+
+  const projs=[...new Set([...PROJECTS,...D.all.map(r=>r.project||NOPROJ)])]
+    .map(p=>({p,n:D.all.filter(r=>(r.project||NOPROJ)===p).length}))
+    .filter(x=>x.n>0).sort((a,b)=>b.n-a.n);
+  const mx=Math.max(1,...projs.map(x=>x.n));
+  const tot=D.all.length;
+  $("#d-proj").innerHTML=projs.length
+    ? projs.map((c,i)=>bar(c.p,c.n,mx,colorOf(c.p,i),tot?Math.round(c.n/tot*100):0)).join("")
+    : `<div class="empty">ມື້ນີ້ຍັງບໍ່ມີຂໍ້ມູນ</div>`;
+
+  $("#d-list").innerHTML=D.all.length?D.all.map(it=>{
+    const st=it.status||"open", isUpd=it.lastDate===D.d&&it.date!==D.d;
+    return `<button class="item" data-id="${it.id}">
+      ${tagHTML(it.by,statusClass(st))}
+      <span class="meta"><span class="nm">${esc(labelOf(it))}
+        <i class="stbadge" style="background:${statusColor(st)}">${esc(statusLabel(st))}</i>
+        ${isUpd?'<i class="stbadge" style="background:var(--muted)">ອັບເດດ</i>':''}</span>
+        <span class="ph num">${esc(fmtPhone(it.phone))}</span>
+        <span class="sub">(${esc(who(it.by))})${it.project&&it.project!==NOPROJ?" · "+esc(it.project):""}</span>
+      </span></button>`;
+  }).join(""):`<div class="empty">ມື້ນີ້ຍັງບໍ່ມີລູກຄ້າ</div>`;
+}
+$("#d-day").addEventListener("change",renderDaily);
+$("#d-prev").onclick=()=>{const el=$("#d-day");const i=el.selectedIndex;if(i<el.options.length-1){el.selectedIndex=i+1;renderDaily();}};
+$("#d-next").onclick=()=>{const el=$("#d-day");const i=el.selectedIndex;if(i>0){el.selectedIndex=i-1;renderDaily();}};
+
+/* ── ພິມ / PDF ລາຍວັນ ── */
+$("#btnDayPdf").onclick=()=>{
+  const D=dayData($("#d-day").value);
+  const projs=[...new Set(D.all.map(r=>r.project||NOPROJ))]
+    .map(p=>({p,n:D.all.filter(r=>(r.project||NOPROJ)===p).length})).sort((a,b)=>b.n-a.n);
+  $("#sheetprint").innerHTML=`
+    <h1>ລາຍງານລູກຄ້າປະຈຳວັນ</h1>
+    <p class="ph">ບໍລິສັດ ຢູ່ສະບາຍ ແລນ ແອນ ເຮົາສ໌ — ໂຄງການດິນຈັດສັນ<br>ວັນທີ ${D.d}</p>
+    <div class="sum">
+      <div><b>${D.all.length}</b><span>ລູກຄ້າທັງໝົດ</span></div>
+      <div><b>${D.fresh.length}</b><span>ລູກຄ້າໃໝ່</span></div>
+      <div><b>${D.upd.length}</b><span>ອັບເດດເບີເກົ່າ</span></div>
+      <div><b>${D.sold}</b><span>ປິດຍອດຂາຍ</span></div>
+      <div><b>${D.nop}</b><span>ບໍ່ມີເບີໂທ</span></div>
+    </div>
+    ${projs.length?`<p style="margin:10px 0 0;font-size:12px"><b>ໂຄງການ:</b> ${projs.map(x=>esc(x.p)+" "+x.n+" ຄົນ").join(" · ")}</p>`:""}
+    <table><thead><tr><th style="width:7%">ລຳດັບ</th><th style="width:22%">ລູກຄ້າ</th>
+      <th style="width:18%">ເບີໂທ</th><th style="width:16%">ສະຖານະ</th>
+      <th style="width:19%">ໂຄງການ</th><th>ຜູ້ບັນທຶກ</th></tr></thead><tbody>
+      ${D.all.map((r,i)=>`<tr><td>${i+1}</td><td>${esc(labelOf(r))}</td>
+        <td>${esc(fmtPhone(r.phone))}</td><td>${esc(statusLabel(r.status||"open"))}</td>
+        <td>${esc(r.project||"—")}</td><td>${esc(who(r.by))}</td></tr>`).join("")
+        ||`<tr><td colspan="6" style="text-align:center">ບໍ່ມີຂໍ້ມູນ</td></tr>`}
+    </tbody></table>
+    <div class="sig"><div>ຜູ້ລາຍງານ<br><br>............................................<br>ວັນທີ ......../......../........</div></div>`;
+  print();
+};
+
+/* ── ບັນທຶກເປັນຮູບ (ວາດເອງດ້ວຍ canvas — ບໍ່ຕ້ອງພຶ່ງໄລບຣາຣີພາຍນອກ) ── */
+$("#btnDayImg").onclick=async()=>{
+  const btn=$("#btnDayImg"); btn.disabled=true;
+  try{ if(document.fonts&&document.fonts.ready) await document.fonts.ready; }catch(_){}
+  try{
+    const D=dayData($("#d-day").value);
+    const W=1080, PAD=56, LH=62;
+    const rows=D.all.slice(0,14);
+    const H=760+rows.length*LH+(D.all.length>rows.length?46:0);
+    const c=document.createElement("canvas");
+    c.width=W; c.height=H;
+    const x=c.getContext("2d");
+    const F=(sz,w)=>`${w||400} ${sz}px Phetsarath, sans-serif`;
+
+    x.fillStyle="#ECEDEA"; x.fillRect(0,0,W,H);
+    /* ຫົວ */
+    x.fillStyle="#C4620E"; x.fillRect(0,0,W,210);
+    x.fillStyle="#16255A"; x.fillRect(0,0,14,210);
+    x.fillStyle="#fff";
+    x.font=F(46,700); x.fillText("ລາຍງານລູກຄ້າປະຈຳວັນ",PAD,86);
+    x.font=F(28,400); x.fillText("ບໍລິສັດ ຢູ່ສະບາຍ ແລນ ແອນ ເຮົາສ໌ · ໂຄງການດິນຈັດສັນ",PAD,132);
+    x.font=F(34,700); x.fillText("ວັນທີ "+D.d,PAD,182);
+
+    /* ກ່ອງຕົວເລກ */
+    const stats=[["ລູກຄ້າທັງໝົດ",D.all.length,"#16255A"],["ລູກຄ້າໃໝ່",D.fresh.length,"#2B4C7E"],
+                 ["ອັບເດດ",D.upd.length,"#6E7480"],["ປິດຍອດຂາຍ",D.sold,"#2E6B4C"]];
+    const bw=(W-PAD*2-36)/4;
+    stats.forEach(([lab,n,col],i)=>{
+      const bx=PAD+i*(bw+12);
+      x.fillStyle="#fff"; roundRect(x,bx,244,bw,132,16); x.fill();
+      x.fillStyle=col; x.font=F(52,700); x.textAlign="center";
+      x.fillText(String(n),bx+bw/2,318);
+      x.fillStyle="#6E7480"; x.font=F(23,400); x.fillText(lab,bx+bw/2,356);
+      x.textAlign="left";
+    });
+
+    /* ໂຄງການ */
+    let y=430;
+    x.fillStyle="#1A1D26"; x.font=F(30,700); x.fillText("ໂຄງການທີ່ສົນໃຈ",PAD,y); y+=20;
+    const projs=[...new Set(D.all.map(r=>r.project||NOPROJ))]
+      .map(p=>({p,n:D.all.filter(r=>(r.project||NOPROJ)===p).length})).sort((a,b)=>b.n-a.n).slice(0,4);
+    const mx=Math.max(1,...projs.map(v=>v.n)), tot=Math.max(1,D.all.length);
+    const PC=["#C4620E","#2B4C7E","#2E6B4C","#8A5A9E"];
+    if(projs.length){
+      projs.forEach((v,i)=>{
+        y+=44;
+        x.fillStyle="#1A1D26"; x.font=F(25,400); x.fillText(v.p,PAD,y);
+        x.textAlign="right"; x.fillStyle="#6E7480";
+        x.fillText(v.n+" ຄົນ · "+Math.round(v.n/tot*100)+"%",W-PAD,y); x.textAlign="left";
+        y+=14;
+        x.fillStyle="#DCDDD8"; roundRect(x,PAD,y,W-PAD*2,12,6); x.fill();
+        x.fillStyle=PC[i%PC.length]; roundRect(x,PAD,y,(W-PAD*2)*(v.n/mx),12,6); x.fill();
+      });
+    }else{ y+=44; x.fillStyle="#6E7480"; x.font=F(25,400); x.fillText("ບໍ່ມີຂໍ້ມູນ",PAD,y); }
+
+    /* ລາຍຊື່ */
+    y+=70;
+    x.fillStyle="#1A1D26"; x.font=F(30,700); x.fillText("ລາຍຊື່ລູກຄ້າ",PAD,y);
+    y+=22;
+    x.fillStyle="#fff"; roundRect(x,PAD,y,W-PAD*2,rows.length*LH+22,16); x.fill();
+    y+=18;
+    rows.forEach((r,i)=>{
+      const ty=y+i*LH+34;
+      x.fillStyle="#1A1D26"; x.font=F(27,700);
+      x.fillText((i+1)+". "+labelOf(r),PAD+26,ty);
+      x.fillStyle="#6E7480"; x.font=F(24,400);
+      x.textAlign="right";
+      x.fillText(fmtPhone(r.phone)+"  ·  "+statusLabel(r.status||"open"),W-PAD-26,ty);
+      x.textAlign="left";
+      if(i<rows.length-1){ x.fillStyle="#F0F0ED"; x.fillRect(PAD+20,ty+16,W-PAD*2-40,1); }
+    });
+    y+=rows.length*LH+22;
+    if(D.all.length>rows.length){
+      y+=36; x.fillStyle="#6E7480"; x.font=F(24,400);
+      x.fillText("... ແລະ ອີກ "+(D.all.length-rows.length)+" ຄົນ",PAD,y);
+    }
+    /* ທ້າຍ */
+    x.fillStyle="#6E7480"; x.font=F(21,400);
+    x.fillText("ສ້າງໂດຍລະບົບສະຖິຕິລູກຄ້າ · "+today(),PAD,H-30);
+
+    const url=c.toDataURL("image/png");
+    const a=document.createElement("a");
+    a.href=url; a.download="ລາຍງານ-"+D.d+".png"; a.click();
+    toast("ບັນທຶກຮູບແລ້ວ ✓");
+  }catch(e){ toast("ສ້າງຮູບບໍ່ໄດ້: "+(e.message||e)); }
+  btn.disabled=false;
+};
+function roundRect(x,px,py,w,h,r){
+  x.beginPath();
+  x.moveTo(px+r,py); x.arcTo(px+w,py,px+w,py+h,r); x.arcTo(px+w,py+h,px,py+h,r);
+  x.arcTo(px,py+h,px,py,r); x.arcTo(px,py,px+w,py,r); x.closePath();
+}
+
 function fillSumProjects(){
   const el=$("#s-project"); if(!el) return;
   const keep=el.value;
@@ -489,7 +728,7 @@ function fillSumProjects(){
   el.value=(keep&&(keep==="all"||present.includes(keep)))?keep:"all";
 }
 
-const renderAll=()=>{fillMonths("#m-month");renderList();renderSummary();renderToday();$("#a-hint").textContent="A"+nextNum();};
+const renderAll=()=>{fillMonths("#m-month");renderList();renderSummary();renderDaily();renderToday();$("#a-hint").textContent="A"+nextNum();};
 
 $("#btnPrint").onclick=()=>{
   const mk=$("#s-month").value,inM=it=>mk==="all"||(it.date||"").startsWith(mk);

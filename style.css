@@ -151,6 +151,17 @@ select.input{appearance:none;background-image:linear-gradient(45deg,transparent 
 .seg button{flex:1;padding:11px 6px;font-size:15px;color:var(--muted)}
 .seg button[aria-pressed="true"]{background:#E7EAF3;color:var(--navy);font-weight:700}
 .seg button.buy[aria-pressed="true"]{background:var(--green-s);color:var(--green)}
+
+/* ── ປຸ່ມຕິກ “ບໍ່ມີເບີໂທ” ── */
+.chk{display:flex;align-items:center;gap:9px;margin-top:9px;font-size:13.5px;color:var(--muted);cursor:pointer}
+.chk input{width:19px;height:19px;accent-color:var(--orange);cursor:pointer;flex:none}
+.input.off{background:var(--line-2);color:var(--muted)}
+
+/* ── ສະຫຼຸບລາຍວັນ ── */
+#dailycard .row{align-items:stretch}
+#dailycard .btn.ghost{padding:12px 0}
+#d-list .item{border-bottom:1px solid var(--line-2)}
+#d-list .item:last-child{border-bottom:none}
 .chip{display:inline-flex;font-size:12.5px;background:#E7EAF3;color:var(--navy);padding:2px 10px;border-radius:999px;margin-left:6px}
 
 .item{display:flex;align-items:center;gap:12px;width:100%;text-align:left;padding:11px 8px;border-bottom:1px solid var(--line-2);border-radius:8px}

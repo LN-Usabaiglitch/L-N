@@ -14,8 +14,8 @@
 <meta property="og:title" content="ສະຖິຕິລູກຄ້າ — ບໍລິສັດ ຢູ່ສະບາຍ ແລນ ແອນ ເຮົາສ໌">
 <meta property="og:description" content="ບັນທຶກ ຕິດຕາມ ແລະ ສະຫຼຸບຍອດລູກຄ້າ ໂຄງການດິນຈັດສັນ">
 <meta property="og:url" content="https://ln-usabaiglitch.github.io/L-N/">
-<meta property="og:image" content="https://ln-usabaiglitch.github.io/L-N/og.jpg?v=1">
-<meta property="og:image:secure_url" content="https://ln-usabaiglitch.github.io/L-N/og.jpg?v=1">
+<meta property="og:image" content="https://ln-usabaiglitch.github.io/L-N/og.jpg?v=3">
+<meta property="og:image:secure_url" content="https://ln-usabaiglitch.github.io/L-N/og.jpg?v=3">
 <meta property="og:image:type" content="image/jpeg">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
@@ -23,7 +23,7 @@
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="ສະຖິຕິລູກຄ້າ — ບໍລິສັດ ຢູ່ສະບາຍ ແລນ ແອນ ເຮົາສ໌">
 <meta name="twitter:description" content="ບັນທຶກ ຕິດຕາມ ແລະ ສະຫຼຸບຍອດລູກຄ້າ ໂຄງການດິນຈັດສັນ">
-<meta name="twitter:image" content="https://ln-usabaiglitch.github.io/L-N/og.jpg?v=1">
+<meta name="twitter:image" content="https://ln-usabaiglitch.github.io/L-N/og.jpg?v=3">
 
 <!-- ══ ໄອຄອນ ══ -->
 <link rel="icon" href="favicon.png" sizes="any">
@@ -35,7 +35,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Phetsarath:wght@400;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=18">
+<link rel="stylesheet" href="style.css?v=19">
 </head>
 <body>
 
@@ -115,7 +115,8 @@
       <div class="card">
         <p class="eyebrow">ບັນທຶກລູກຄ້າໃໝ່</p>
         <label class="f"><span>ເບີໂທລະສັບ</span>
-          <input class="input num" id="a-phone" type="tel" inputmode="tel" placeholder="020 xxxx xxxx"></label>
+          <input class="input num" id="a-phone" type="tel" inputmode="tel" placeholder="020 xxxx xxxx">
+          <label class="chk"><input type="checkbox" id="a-nophone"><span>ລູກຄ້າບໍ່ມີເບີໂທ (ເຂົ້າມາເບິ່ງດິນ)</span></label></label>
         <label class="f"><span>ຊື່ລູກຄ້າ <span class="chip" id="a-hint">A1</span></span>
           <input class="input" id="a-name" placeholder="ຮູ້ຊື່ແລ້ວພິມທັບລະຫັດໄດ້ເລີຍ"></label>
         <label class="f"><span>ສະຖານະ</span>
@@ -180,6 +181,31 @@
         </div>
       </div>
 
+      <div class="card" id="dailycard">
+        <p class="eyebrow">ສະຫຼຸບລາຍວັນ</p>
+        <div class="row" style="margin-bottom:12px">
+          <select class="input num" id="d-day"></select>
+          <button class="btn ghost" type="button" id="d-prev" style="flex:0 0 52px">‹</button>
+          <button class="btn ghost" type="button" id="d-next" style="flex:0 0 52px">›</button>
+        </div>
+        <div class="bignum"><b class="num" id="d-total">0</b><span>ລູກຄ້າສົນໃຈໃນມື້ນີ້</span></div>
+        <div class="stats">
+          <div class="stat open"><b class="num" id="d-new">0</b><span>ລູກຄ້າໃໝ່</span></div>
+          <div class="stat"><b class="num" id="d-upd">0</b><span>ອັບເດດເບີເກົ່າ</span></div>
+          <div class="stat sold"><b class="num" id="d-sold">0</b><span>ປິດຍອດຂາຍ</span></div>
+          <div class="stat"><b class="num" id="d-nop">0</b><span>ບໍ່ມີເບີໂທ</span></div>
+        </div>
+        <p class="eyebrow" style="margin:18px 0 10px">ໂຄງການທີ່ສົນໃຈໃນມື້ນີ້</p>
+        <div id="d-proj"></div>
+        <p class="eyebrow" style="margin:18px 0 10px">ລາຍຊື່ໃນມື້ນີ້</p>
+        <div id="d-list"></div>
+        <div style="height:12px"></div>
+        <div class="row">
+          <button class="btn ghost" type="button" id="btnDayPdf">🖨 ພິມ / PDF</button>
+          <button class="btn orange" type="button" id="btnDayImg">🖼 ບັນທຶກເປັນຮູບ</button>
+        </div>
+      </div>
+
       <div class="card"><p class="eyebrow">ສະຖານະລູກຄ້າ — ທຽບກັນ</p><div id="bystatus"></div></div>
       <div class="card"><p class="eyebrow">ໂຄງການທີ່ຖືກຖາມຫຼາຍທີ່ສຸດ</p><div id="byproject"></div></div>
       <div class="card"><p class="eyebrow">ລາຍຊື່ລູກຄ້າ</p><div id="custlist"></div></div>
@@ -237,7 +263,8 @@
     <button class="btn ghost" id="btnCloseRo">ປິດ</button>
   </div>
   <div id="editForm" class="hide">
-    <label class="f"><span>ເບີໂທລະສັບ</span><input class="input num" id="e-phone" type="tel" inputmode="tel"></label>
+    <label class="f"><span>ເບີໂທລະສັບ</span><input class="input num" id="e-phone" type="tel" inputmode="tel">
+      <label class="chk"><input type="checkbox" id="e-nophone"><span>ລູກຄ້າບໍ່ມີເບີໂທ</span></label></label>
     <label class="f"><span>ຊື່ລູກຄ້າ (ລຶບຊື່ອອກ = ໃຊ້ລະຫັດອັດຕະໂນມັດ)</span><input class="input" id="e-name"></label>
     <label class="f"><span>ສະຖານະ</span>
       <select class="input" id="e-status"></select>
@@ -300,6 +327,6 @@
 <div class="toast" id="toast"></div>
 <div id="sheetprint"></div>
 
-<script type="module" src="app.js?v=18"></script>
+<script type="module" src="app.js?v=19"></script>
 </body>
 </html>
