@@ -35,7 +35,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Phetsarath:wght@400;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=19">
+<link rel="stylesheet" href="style.css?v=20">
 </head>
 <body>
 
@@ -116,7 +116,8 @@
         <p class="eyebrow">ບັນທຶກລູກຄ້າໃໝ່</p>
         <label class="f"><span>ເບີໂທລະສັບ</span>
           <input class="input num" id="a-phone" type="tel" inputmode="tel" placeholder="020 xxxx xxxx">
-          <label class="chk"><input type="checkbox" id="a-nophone"><span>ລູກຄ້າບໍ່ມີເບີໂທ (ເຂົ້າມາເບິ່ງດິນ)</span></label></label>
+          <label class="chk"><input type="checkbox" id="a-nophone"><span>ລູກຄ້າບໍ່ມີເບີໂທ (ເຂົ້າມາເບິ່ງດິນ)</span></label>
+          <span class="dupnote hide" id="a-dup"></span></label>
         <label class="f"><span>ຊື່ລູກຄ້າ <span class="chip" id="a-hint">A1</span></span>
           <input class="input" id="a-name" placeholder="ຮູ້ຊື່ແລ້ວພິມທັບລະຫັດໄດ້ເລີຍ"></label>
         <label class="f"><span>ສະຖານະ</span>
@@ -125,9 +126,15 @@
             <input class="input" id="a-status-new" placeholder="ພິມສະຖານະໃໝ່ ເຊັ່ນ: ພື້ນທີ່ແພງເກີນໄປ">
             <button class="btn sm" type="button" id="a-status-save">ບັນທຶກ</button>
           </div></label>
-        <label class="f"><span>ໂຄງການທີ່ລູກຄ້າສົນໃຈ</span>
-          <select class="input" id="a-project"></select>
-          <input class="input hide" id="a-project-other" style="margin-top:8px" placeholder="ພິມຊື່ໂຄງການ ຫຼື ສິ່ງທີ່ລູກຄ້າສົນໃຈ"></label>
+        <div class="f"><span class="lab">ໂຄງການທີ່ລູກຄ້າສົນໃຈ <small>· ເລືອກໄດ້ຫຼາຍໂຄງການ</small></span>
+          <div class="chips" id="a-projects" role="group" aria-label="ໂຄງການທີ່ລູກຄ້າສົນໃຈ"></div>
+          <input class="input hide" id="a-project-other" style="margin-top:8px" placeholder="ພິມຊື່ໂຄງການ ຫຼື ສິ່ງທີ່ລູກຄ້າສົນໃຈ"></div>
+        <label class="f"><span>ເຫັນໂຄສະນາຈາກໃສ</span>
+          <select class="input" id="a-source"></select>
+          <div class="addrow hide" id="a-source-add">
+            <input class="input" id="a-source-new" placeholder="ພິມຊ່ອງທາງໃໝ່ ເຊັ່ນ: TikTok, ໝູ່ແນະນຳ">
+            <button class="btn sm" type="button" id="a-source-save">ບັນທຶກ</button>
+          </div></label>
         <label class="f"><span>ວັນທີ</span>
           <div class="row" id="a-date-row">
             <select class="input num" id="a-y"></select>
@@ -144,7 +151,7 @@
         <div class="tstats">
           <div><b class="num" id="t-today">0</b><span>ມື້ນີ້</span></div>
           <div><b class="num" id="t-month">0</b><span>ເດືອນນີ້</span></div>
-          <div><b class="num" id="t-sold">0</b><span>ປິດຍອດ</span></div>
+          <div><b class="num" id="t-sold">0</b><span>ປິດຍອດເດືອນນີ້</span></div>
         </div>
         <p class="eyebrow" style="margin-top:18px">ບັນທຶກລ່າສຸດມື້ນີ້</p>
         <div id="todaylist"></div>
@@ -166,80 +173,102 @@
     </section>
 
     <section class="view" id="v-sum">
-      <div class="card">
-        <p class="eyebrow">ສະຫຼຸບຍອດ</p>
-        <div class="row" style="margin-bottom:12px">
-          <select class="input num" id="s-month"></select>
-          <select class="input" id="s-project"></select>
-        </div>
-        <div class="bignum"><b class="num" id="s-total">0</b><span>ລູກຄ້າຕິດຕໍ່ເຂົ້າມາ</span></div>
-        <div class="stats">
-          <div class="stat sold"><b class="num" id="s-sold">0</b><span>ປິດຍອດຂາຍແລ້ວ</span></div>
-          <div class="stat open"><b class="num" id="s-open">0</b><span>ຜູ້ສົນໃຈ</span></div>
-          <div class="stat top"><b class="num" id="s-top">—</b><span id="s-toplab">ສະຖານະທີ່ພົບຫຼາຍສຸດ</span></div>
-          <div class="stat del"><b class="num" id="s-del">0</b><span>ຍົກເລີກ (ພິມເບີຜິດ)</span></div>
-        </div>
+      <div class="seg sumtabs" id="sumtabs" role="tablist">
+        <button type="button" data-m="month" aria-pressed="true">ສະຫຼຸບລາຍເດືອນ</button>
+        <button type="button" data-m="day" aria-pressed="false">ສະຫຼຸບລາຍວັນ</button>
       </div>
 
-      <div class="card" id="dailycard">
-        <p class="eyebrow">ສະຫຼຸບລາຍວັນ</p>
-        <div class="row" style="margin-bottom:12px">
-          <select class="input num" id="d-day"></select>
-          <button class="btn ghost" type="button" id="d-prev" style="flex:0 0 52px">‹</button>
-          <button class="btn ghost" type="button" id="d-next" style="flex:0 0 52px">›</button>
+      <!-- ══ ລາຍເດືອນ ══ -->
+      <div class="sumpane" id="sum-month">
+        <div class="card span3 overview">
+          <p class="eyebrow">ສະຫຼຸບຍອດລາຍເດືອນ</p>
+          <div class="filters">
+            <select class="input num" id="s-month" aria-label="ເດືອນ"></select>
+            <select class="input" id="s-project" aria-label="ໂຄງການ"></select>
+          </div>
+          <div class="bignum"><b class="num" id="s-total">0</b><span>ລູກຄ້າຕິດຕໍ່ເຂົ້າມາ</span></div>
+          <div class="stats">
+            <div class="stat sold"><b class="num" id="s-sold">0</b><span>ປິດຍອດຂາຍແລ້ວ</span></div>
+            <div class="stat open"><b class="num" id="s-open">0</b><span>ຜູ້ສົນໃຈ</span></div>
+            <div class="stat top"><b class="num" id="s-top">—</b><span id="s-toplab">ສະຖານະທີ່ພົບຫຼາຍສຸດ</span></div>
+            <div class="stat del"><b class="num" id="s-del">0</b><span>ຍົກເລີກ (ພິມເບີຜິດ)</span></div>
+          </div>
+          <div class="exrow">
+            <button class="btn" type="button" id="btnMonPdf">📄 ບັນທຶກ PDF</button>
+            <button class="btn orange" type="button" id="btnMonImg">🖼 ບັນທຶກຮູບ</button>
+          </div>
         </div>
-        <div class="bignum"><b class="num" id="d-total">0</b><span>ລູກຄ້າສົນໃຈໃນມື້ນີ້</span></div>
-        <div class="stats">
-          <div class="stat open"><b class="num" id="d-new">0</b><span>ລູກຄ້າໃໝ່</span></div>
-          <div class="stat"><b class="num" id="d-upd">0</b><span>ອັບເດດເບີເກົ່າ</span></div>
-          <div class="stat sold"><b class="num" id="d-sold">0</b><span>ປິດຍອດຂາຍ</span></div>
-          <div class="stat"><b class="num" id="d-nop">0</b><span>ບໍ່ມີເບີໂທ</span></div>
-        </div>
-        <p class="eyebrow" style="margin:18px 0 10px">ໂຄງການທີ່ສົນໃຈໃນມື້ນີ້</p>
-        <div id="d-proj"></div>
-        <p class="eyebrow" style="margin:18px 0 10px">ລາຍຊື່ໃນມື້ນີ້</p>
-        <div id="d-list"></div>
-        <div style="height:12px"></div>
-        <div class="row">
-          <button class="btn ghost" type="button" id="btnDayPdf">🖨 ພິມ / PDF</button>
-          <button class="btn orange" type="button" id="btnDayImg">🖼 ບັນທຶກເປັນຮູບ</button>
-        </div>
+        <div class="card"><p class="eyebrow">ສະຖານະລູກຄ້າ — ທຽບກັນ</p><div id="bystatus"></div></div>
+        <div class="card"><p class="eyebrow">ໂຄງການທີ່ຖືກຖາມຫຼາຍທີ່ສຸດ</p><div id="byproject"></div></div>
+        <div class="card srccard"><p class="eyebrow">ເຫັນໂຄສະນາຈາກໃສ</p><div id="bysource"></div></div>
+        <div class="card span2 rows2"><p class="eyebrow">ລາຍຊື່ລູກຄ້າ</p><div id="custlist"></div></div>
+        <div class="card"><p class="eyebrow">ລາຍການບັນທຶກແຕ່ລະຄົນ</p><div id="byuser"></div></div>
+        <div class="card gonecard"><p class="eyebrow">ລາຍການທີ່ຍົກເລີກ (ພິມເບີຜິດ)</p><div id="deleted"></div></div>
       </div>
 
-      <div class="card"><p class="eyebrow">ສະຖານະລູກຄ້າ — ທຽບກັນ</p><div id="bystatus"></div></div>
-      <div class="card"><p class="eyebrow">ໂຄງການທີ່ຖືກຖາມຫຼາຍທີ່ສຸດ</p><div id="byproject"></div></div>
-      <div class="card"><p class="eyebrow">ລາຍຊື່ລູກຄ້າ</p><div id="custlist"></div></div>
-      <div class="card"><p class="eyebrow">ລາຍການບັນທຶກແຕ່ລະຄົນ</p><div id="byuser"></div></div>
-      <div class="card"><p class="eyebrow">ລາຍການທີ່ຍົກເລີກ (ພິມເບີຜິດ)</p><div id="deleted"></div></div>
-      <div class="card"><button class="btn ghost" id="btnPrint">🖨 ພິມລາຍງານ / PDF</button></div>
+      <!-- ══ ລາຍວັນ ══ -->
+      <div class="sumpane hide" id="sum-day">
+        <div class="card span3 overview" id="dailycard">
+          <p class="eyebrow">ສະຫຼຸບລາຍວັນ</p>
+          <div class="filters daynav">
+            <button class="btn ghost" type="button" id="d-prev" aria-label="ມື້ກ່ອນ">‹</button>
+            <select class="input num" id="d-day" aria-label="ວັນທີ"></select>
+            <button class="btn ghost" type="button" id="d-next" aria-label="ມື້ຖັດໄປ">›</button>
+          </div>
+          <div class="bignum"><b class="num" id="d-total">0</b><span id="d-caption">ລູກຄ້າໃນມື້ນີ້</span></div>
+          <div class="stats">
+            <div class="stat open"><b class="num" id="d-new">0</b><span>ລູກຄ້າໃໝ່</span></div>
+            <div class="stat"><b class="num" id="d-upd">0</b><span>ອັບເດດເບີເກົ່າ</span></div>
+            <div class="stat sold"><b class="num" id="d-sold">0</b><span>ປິດຍອດຂາຍ</span></div>
+            <div class="stat"><b class="num" id="d-nop">0</b><span>ບໍ່ມີເບີໂທ</span></div>
+          </div>
+          <div class="exrow">
+            <button class="btn" type="button" id="btnDayPdf">📄 ບັນທຶກ PDF</button>
+            <button class="btn orange" type="button" id="btnDayImg">🖼 ບັນທຶກຮູບ</button>
+          </div>
+        </div>
+        <div class="card"><p class="eyebrow">ສະຖານະລູກຄ້າ</p><div id="d-status"></div></div>
+        <div class="card"><p class="eyebrow">ໂຄງການທີ່ສົນໃຈ</p><div id="d-proj"></div></div>
+        <div class="card srccard"><p class="eyebrow">ເຫັນໂຄສະນາຈາກໃສ</p><div id="d-source"></div></div>
+        <div class="card span3"><p class="eyebrow">ລາຍຊື່ລູກຄ້າ</p><div id="d-list"></div></div>
+      </div>
     </section>
 
     <section class="view" id="v-admin">
-      <div class="card">
+      <div class="card span3">
         <p class="eyebrow">ໝາຍເຫດແຖບສີສົ້ມດ້ານເທິງ (ທຸກຄົນເຫັນ)</p>
         <textarea class="input" id="ad-banner" placeholder="ເຊັ່ນ: ເດືອນນີ້ເປົ້າໝາຍ 30 ລູກຄ້າ — ຢ່າລືມບັນທຶກທຸກເບີ"></textarea>
         <div style="height:10px"></div>
         <button class="btn" id="btnSaveBanner">ບັນທຶກໝາຍເຫດ</button>
       </div>
+
       <div class="card">
         <p class="eyebrow">ຈັດການລາຍຊື່ໂຄງການ</p>
-        <div id="projlist"></div>
-        <div style="height:10px"></div>
-        <div class="row">
-          <input class="input" id="ad-proj" placeholder="ຊື່ໂຄງການໃໝ່" style="flex:2">
-          <button class="btn" id="btnAddProj" style="flex:1">+ ເພີ່ມ</button>
+        <div id="projlist" class="grow"></div>
+        <div class="addline">
+          <input class="input" id="ad-proj" placeholder="ຊື່ໂຄງການໃໝ່">
+          <button class="btn" id="btnAddProj">+ ເພີ່ມ</button>
         </div>
       </div>
 
       <div class="card">
         <p class="eyebrow">ຈັດການສະຖານະ / ຄຳຕິຊົມ</p>
-        <div id="statlist"></div>
-        <div style="height:10px"></div>
-        <div class="row">
-          <input class="input" id="ad-stat" placeholder="ເຊັ່ນ: ພື້ນທີ່ແພງເກີນໄປ" style="flex:2">
-          <button class="btn" id="btnAddStat" style="flex:1">+ ເພີ່ມ</button>
+        <p class="hint top">ລຶບ ຫຼື ເພີ່ມໄດ້ທຸກລາຍການ — ລູກຄ້າເກົ່າທີ່ໃຊ້ລາຍການທີ່ຖືກລຶບ ຈະຍັງສະແດງຄືເກົ່າ</p>
+        <div id="statlist" class="grow"></div>
+        <div class="addline">
+          <input class="input" id="ad-stat" placeholder="ເຊັ່ນ: ພື້ນທີ່ແພງເກີນໄປ">
+          <button class="btn" id="btnAddStat">+ ເພີ່ມ</button>
         </div>
-        <p style="font-size:12.5px;color:var(--muted);margin:10px 0 0">“ສົນໃຈ / ຖາມ” ແລະ “ປິດຍອດຂາຍແລ້ວ” ເປັນຄ່າຫຼັກ ລຶບບໍ່ໄດ້</p>
+      </div>
+
+      <div class="card">
+        <p class="eyebrow">ຈັດການ “ເຫັນໂຄສະນາຈາກໃສ”</p>
+        <p class="hint top">ພະນັກງານເພີ່ມລາຍການໃໝ່ໄດ້ຈາກໜ້າບັນທຶກເຊັ່ນກັນ</p>
+        <div id="srclist" class="grow"></div>
+        <div class="addline">
+          <input class="input" id="ad-src" placeholder="ເຊັ່ນ: TikTok, ໝູ່ແນະນຳ">
+          <button class="btn" id="btnAddSrc">+ ເພີ່ມ</button>
+        </div>
       </div>
 
       <div class="card">
@@ -250,7 +279,7 @@
         <label class="f"><span>ລະຫັດຜ່ານເລີ່ມຕົ້ນ (6 ຕົວຂຶ້ນໄປ)</span><input class="input" id="ad-pass" type="text" placeholder="ຕັ້ງໃຫ້ເຂົາ ແລ້ວບອກເຂົາ"></label>
         <button class="btn" id="btnMakeStaff">+ ສ້າງບັນຊີ</button>
       </div>
-      <div class="card"><p class="eyebrow">ຈັດການພະນັກງານ</p><div id="stafflist"></div></div>
+      <div class="card span2"><p class="eyebrow">ຈັດການພະນັກງານ</p><div id="stafflist"></div></div>
     </section>
   </main>
 </div>
@@ -272,9 +301,15 @@
         <input class="input" id="e-status-new" placeholder="ພິມສະຖານະໃໝ່">
         <button class="btn sm" type="button" id="e-status-save">ບັນທຶກ</button>
       </div></label>
-    <label class="f"><span>ໂຄງການ</span>
-      <select class="input" id="e-project"></select>
-      <input class="input hide" id="e-project-other" style="margin-top:8px" placeholder="ພິມຊື່ໂຄງການ"></label>
+    <div class="f"><span class="lab">ໂຄງການ <small>· ເລືອກໄດ້ຫຼາຍໂຄງການ</small></span>
+      <div class="chips" id="e-projects" role="group" aria-label="ໂຄງການ"></div>
+      <input class="input hide" id="e-project-other" style="margin-top:8px" placeholder="ພິມຊື່ໂຄງການ"></div>
+    <label class="f"><span>ເຫັນໂຄສະນາຈາກໃສ</span>
+      <select class="input" id="e-source"></select>
+      <div class="addrow hide" id="e-source-add">
+        <input class="input" id="e-source-new" placeholder="ພິມຊ່ອງທາງໃໝ່">
+        <button class="btn sm" type="button" id="e-source-save">ບັນທຶກ</button>
+      </div></label>
     <label class="f"><span>ວັນທີ</span>
       <div class="row">
         <select class="input num" id="e-y"></select>
@@ -324,9 +359,24 @@
   <button class="btn ghost" id="btnPwCancel">ຍົກເລີກ</button>
 </div></div>
 
+<div class="sheet" id="exsheet"><div>
+  <h3 id="exTitle">ລາຍງານພ້ອມແລ້ວ</h3>
+  <div class="expv"><img id="exImg" alt="ຕົວຢ່າງລາຍງານ"></div>
+  <p class="exmeta" id="exMeta"></p>
+  <p class="hint hide" id="exHint">ຫຼື ກົດຄ້າງທີ່ຮູບດ້ານເທິງ ແລ້ວເລືອກ “ບັນທຶກຮູບ”</p>
+  <button class="btn orange" type="button" id="btnExShare">📤 ແຊຣ໌ / ບັນທຶກລົງເຄື່ອງ</button>
+  <div style="height:8px"></div>
+  <div class="row">
+    <button class="btn ghost" type="button" id="btnExDown">⬇ ດາວໂຫຼດໄຟລ໌</button>
+    <button class="btn ghost" type="button" id="btnExPrint">🖨 ພິມ</button>
+  </div>
+  <div style="height:8px"></div>
+  <button class="btn ghost" type="button" id="btnExClose">ປິດ</button>
+</div></div>
+
 <div class="toast" id="toast"></div>
 <div id="sheetprint"></div>
 
-<script type="module" src="app.js?v=19"></script>
+<script type="module" src="app.js?v=20"></script>
 </body>
 </html>
