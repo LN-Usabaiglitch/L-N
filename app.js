@@ -428,12 +428,40 @@ $("#a-phone").addEventListener("focus",primePhone);
 primePhone();
 
 /* ── ເບີຊ້ຳ: ບອກໃຫ້ຮູ້ລ່ວງໜ້າຕັ້ງແຕ່ພິມເບີ ── */
+/* ══ ປະຫວັດການຕິດຕໍ່: ທຸກຄັ້ງທີ່ບັນທຶກເບີເກົ່າຊ້ຳ ຈະເກັບວັນທີ + ສະຖານະຂອງມື້ນັ້ນໄວ້ ══
+   history:[{d:"2026-09-21",st:"ມັດຈຳ 10%",by:"...",t:ເວລາ,n:ໝາຍເຫດ,pj:[ໂຄງການ]}]
+   ຂໍ້ມູນເກົ່າທີ່ຍັງບໍ່ມີ history → ສ້າງຈາກ date / lastDate ໃຫ້ອັດຕະໂນມັດ */
+function timeline(it){
+  let h=Array.isArray(it.history)?it.history.filter(e=>e&&e.d).map(e=>({...e})):[];
+  if(!h.length){
+    const two=!!(it.lastDate&&it.date&&it.lastDate!==it.date);
+    h=[{d:it.date||"",st:two?null:(it.status||"open"),by:it.by,synth:true}];
+    if(two) h.push({d:it.lastDate,st:it.status||"open",by:it.lastBy||it.by,synth:true});
+  }else{
+    h.sort((a,b)=>(a.d||"").localeCompare(b.d||"")||((a.t||0)-(b.t||0)));
+    const last=h[h.length-1];
+    if(it.lastDate&&it.lastDate>last.d) h.push({d:it.lastDate,st:it.status||"open",by:it.lastBy||it.by,synth:true});
+  }
+  return h;
+}
+const stText=e=>e.st?statusLabel(e.st):"—";
+/* ຂໍ້ຄວາມສັ້ນ: 2026-09-21 ມັດຈຳ 10% → 2026-09-22 ປິດຍອດຂາຍແລ້ວ */
+function histText(it){
+  const h=timeline(it); if(h.length<2) return "";
+  const part=e=>e.d+(e.st?" "+statusLabel(e.st):"");
+  const list=h.length>4?[part(h[0]),"…",...h.slice(-2).map(part)]:h.map(part);
+  return list.join(" → ");
+}
 function showDupNote(){
   const box=$("#a-dup"); if(!box) return;
   const v=$("#a-phone").value;
   const d=(!$("#a-nophone").checked&&phoneOk(v))?findByPhone(v):null;
   box.classList.toggle("hide",!d);
-  if(d) box.innerHTML=`ເບີນີ້ມີໃນລະບົບແລ້ວ: <b>${esc(labelOf(d))}</b> · ${esc(statusLabel(d.status))} · ${esc(who(d.by))} <span class="num">${esc(d.date||"")}</span><br>ກົດບັນທຶກ = ອັບເດດລາຍການເກົ່າ (ບໍ່ເພີ່ມຊ້ຳ)`;
+  if(!d) return;
+  const h=timeline(d);
+  box.innerHTML=`ລູກຄ້າເກົ່າ: <b>${esc(labelOf(d))}</b> · ບັນທຶກຄັ້ງທຳອິດ <span class="num">${esc(h[0].d)}</span> ໂດຍ ${esc(who(d.by))}`
+    +`<br>ມາແລ້ວ ${h.length} ຄັ້ງ: <span class="num">${h.map(e=>esc(e.d)+(e.st?" "+esc(statusLabel(e.st)):"")).join(" → ")}</span>`
+    +`<br>ກົດບັນທຶກ = ເພີ່ມການຕິດຕໍ່ຄັ້ງທີ ${h.length+1} ໃສ່ລູກຄ້າຄົນນີ້ (ບໍ່ເພີ່ມຊ້ຳ)`;
 }
 $("#a-phone").addEventListener("input",showDupNote);
 $("#a-nophone").addEventListener("change",showDupNote);
@@ -475,18 +503,29 @@ $("#btnAdd").onclick=async()=>{
       /* ── ເບີຊ້ຳ: ອັບເດດແຖວເກົ່າ ບໍ່ເພີ່ມໃໝ່ ──
          ໂຄງການ = ລວມຂອງເກົ່າ + ທີ່ເລືອກໃໝ່, ສະຖານະປ່ຽນສະເພາະເມື່ອເລືອກເອງ */
       const merged=[...new Set([...projOf(dup),...projs])];
+      const me=auth.currentUser.email, prevLast=dup.lastDate||dup.date||"";
       const patch={projects:merged,project:merged.length?merged.join(", "):NOPROJ,
-        lastDate:dt,lastBy:auth.currentUser.email,updatedAt:serverTimestamp()};
+        lastDate:dt>prevLast?dt:prevLast,lastBy:me,updatedAt:serverTimestamp()};
       if(addStatusTouched) patch.status=addStatus;
+      /* ບັນທຶກເຂົ້າປະຫວັດ: ວັນທີ + ສະຖານະຂອງມື້ນີ້ */
+      const entry={d:dt,st:addStatusTouched?addStatus:(dup.status||"open"),by:me,t:Date.now()};
+      if(note) entry.n=note;
+      if(projs.length) entry.pj=projs;
+      if(Array.isArray(dup.history)&&dup.history.length) patch.history=arrayUnion(entry);
+      else patch.history=[...timeline(dup).map(e=>({d:e.d,st:e.st||null,by:e.by||null,t:0})),entry];
+      const firstDay=timeline(dup)[0].d;
       if(src) patch.source=src;
       if(typedName){const p=parseName(typedName,dup.autoNum);patch.name=p.name;patch.autoNum=p.autoNum;}
       if(note) patch.note=(dup.note?dup.note+"\n":"")+dt+" — "+note;
       await updateDoc(doc(db,"customers",dup.id),patch);
-      toast("ເບີນີ້ມີແລ້ວ — ອັບເດດລູກຄ້າເກົ່າ ✓");
+      toast("ລູກຄ້າເກົ່າ (ຈາກ "+firstDay+") — ບັນທຶກການຕິດຕໍ່ວັນທີ "+dt+" ແລ້ວ ✓");
     }else{
       const {name,autoNum}=parseName(typedName,nextNum());
+      const first={d:dt,st:addStatus,by:auth.currentUser.email,t:Date.now()};
+      if(note) first.n=note;
+      if(projs.length) first.pj=projs;
       await addDoc(COL,{phone,name,autoNum,nophone:noPhone,status:addStatus,
-        projects:projs,project:projs.length?projs.join(", "):NOPROJ,source:src,
+        projects:projs,project:projs.length?projs.join(", "):NOPROJ,source:src,history:[first],
         date:dt,lastDate:dt,note,by:auth.currentUser.email,deleted:false,createdAt:serverTimestamp()});
       toast("ບັນທຶກແລ້ວ ✓");
     }
@@ -509,13 +548,15 @@ function renderList(){
   $("#list").innerHTML=rows.length?rows.map(it=>{
     const lb=labelOf(it);
     const cls=it.deleted?"gone":statusClass(it.status||"open");
+    const tl=timeline(it), ht=it.deleted?"":histText(it);
     const proj=(projText(it)?` · ${esc(projText(it))}`:"")+(it.source?` · ຈາກ ${esc(it.source)}`:"");
     return `<button class="item ${it.deleted?"gone":""}" data-id="${it.id}">
       ${tagHTML(it.by,cls)}
-      <span class="meta"><span class="nm">ຊື່ລູກຄ້າ: ${esc(lb)}</span>
+      <span class="meta"><span class="nm">ຊື່ລູກຄ້າ: ${esc(lb)}${tl.length>1&&!it.deleted?` <i class="stbadge visits">ມາ ${tl.length} ຄັ້ງ</i>`:""}</span>
         <span class="ph num">ເບີ ${esc(fmtPhone(it.phone))}</span>
         ${it.deleted?`<span class="sub warn">ລຶບໂດຍ ${esc(who(it.deletedBy))}</span>`
                     :`<span class="sub">ເພີ່ມໂດຍ ${esc(who(it.by))}${proj}</span>`}
+        ${ht?`<span class="sub hist">ປະຫວັດ: ${esc(ht)}</span>`:""}
       </span><span class="dt num">${esc(it.date||"")}</span></button>`;
   }).join(""):`<div class="empty">${q?"ບໍ່ພົບເບີ ຫຼື ຊື່ນີ້":"ຍັງບໍ່ມີລາຍການ"}</div>`;
 }
@@ -536,7 +577,8 @@ function openRec(id){
       <div><span>ເຫັນໂຄສະນາຈາກ</span><b>${esc(it.source||NOSRC)}</b></div>
       <div><span>ວັນທີ</span><b class="num">${esc(it.date||"")}</b></div>
       <div><span>ເພີ່ມໂດຍ</span><b>${esc(who(it.by))}</b></div>
-      <div><span style="color:var(--red)">ຖືກລຶບໂດຍ</span><b style="color:var(--red)">${esc(who(it.deletedBy))}</b></div>`;
+      <div><span style="color:var(--red)">ຖືກລຶບໂດຍ</span><b style="color:var(--red)">${esc(who(it.deletedBy))}</b></div>
+      ${histText(it)?`<div><span>ປະຫວັດ</span><b class="num">${esc(histText(it))}</b></div>`:""}`;
     $("#sheet").classList.add("on");return;
   }
   $("#sheetTitle").textContent="ແກ້ໄຂຂໍ້ມູນລູກຄ້າ";
@@ -555,12 +597,45 @@ function openRec(id){
   setDate("#e-y","#e-m","#e-d",it.date||today());
   $("#e-note").value=it.note||"";
   fillStatusSel("#e-status",editStatus,{withAdd:true});$("#e-status-add").classList.add("hide");
+  renderHist(it);
   $("#roMeta").innerHTML=`<div><span>ເພີ່ມໂດຍ</span><b>${esc(who(it.by))}</b></div>
     ${it.deleted?`<div><span style="color:var(--red)">ຖືກລຶບໂດຍ</span><b style="color:var(--red)">${esc(who(it.deletedBy))}</b></div>`:""}`;
   $("#btnRestore").classList.toggle("hide",!(manager&&it.deleted));
   $("#btnDel").textContent=(manager&&it.deleted)?"ລຶບຖາວອນ":"ລຶບ";
   $("#sheet").classList.add("on");
 }
+/* ── ປະຫວັດການຕິດຕໍ່ ໃນໜ້າແກ້ໄຂ (ລຶບຄັ້ງທີ່ບັນທຶກຜິດໄດ້) ── */
+function renderHist(it){
+  const tl=timeline(it);
+  const real=Array.isArray(it.history)&&it.history.length>0;
+  $("#e-hist").innerHTML=`<p class="histttl">ປະຫວັດການຕິດຕໍ່ (${tl.length} ຄັ້ງ)</p>`+tl.map((e,i)=>`
+    <div class="hrow">
+      <span class="hdot" style="background:${e.st?statusColor(e.st):"#9AA0A6"}"></span>
+      <span class="hbody"><b class="num">${esc(e.d)}</b> · ${esc(stText(e))}${i===0?' <i class="stbadge visits">ຄັ້ງທຳອິດ</i>':""}
+        <small>${esc(who(e.by))}${e.pj&&e.pj.length?" · "+esc(e.pj.join(", ")):""}${e.n?" · "+esc(e.n):""}</small></span>
+      ${real&&i>0&&!e.synth?`<button type="button" class="btn danger sm" data-delh="${e.t||0}" data-d="${esc(e.d)}">ລຶບ</button>`:""}
+    </div>`).join("");
+}
+$("#e-hist").addEventListener("click",async e=>{
+  const b=e.target.closest("[data-delh]"); if(!b||!editId) return;
+  const cur=items.find(x=>x.id===editId); if(!cur||!Array.isArray(cur.history)) return;
+  const t=+b.dataset.delh, d=b.dataset.d;
+  const hist=cur.history.slice();
+  const idx=hist.findIndex(x=>(x.t||0)===t&&x.d===d); if(idx<0) return;
+  if(!confirm(`ລຶບການຕິດຕໍ່ວັນທີ ${d} ອອກຈາກປະຫວັດ?\n(ໃຊ້ເມື່ອບັນທຶກຜິດ)`)) return;
+  const before=timeline(cur), wasLast=before[before.length-1].d===d&&(before[before.length-1].t||0)===t;
+  hist.splice(idx,1);
+  const after=timeline({...cur,history:hist,lastDate:null});
+  const last=after[after.length-1];
+  const patch={history:hist,lastDate:(last&&last.d)||cur.date};
+  if(wasLast&&last&&last.st) patch.status=last.st;
+  try{
+    await updateDoc(doc(db,"customers",editId),patch);
+    Object.assign(cur,patch);
+    if(patch.status){ editStatus=patch.status; fillStatusSel("#e-status",editStatus,{withAdd:true}); }
+    renderHist(cur); toast("ລຶບອອກຈາກປະຫວັດແລ້ວ");
+  }catch(err){ showErr("#editerr",err); }
+});
 const closeSheet=()=>{$("#sheet").classList.remove("on");editId=null;};
 $("#btnCancel").onclick=closeSheet;$("#btnCloseRo").onclick=closeSheet;
 $("#sheet").addEventListener("click",e=>{if(e.target===$("#sheet"))closeSheet();});
@@ -663,12 +738,16 @@ function custRow(it,opt){
   opt=opt||{};
   const st=it.status||"open", by=opt.by||it.by;
   const sub=[`(${esc(who(by))})`,projText(it)?esc(projText(it)):"",it.source?"ຈາກ "+esc(it.source):""].filter(Boolean).join(" · ");
+  const tl=timeline(it), ht=histText(it);
+  const oldLine=opt.old?`<span class="sub hist">ລູກຄ້າເກົ່າ ຈາກວັນທີ ${esc(opt.old.first)} · ມາຄັ້ງທີ ${opt.old.visit}${ht?" — "+esc(ht):""}</span>`
+    :(ht?`<span class="sub hist">ປະຫວັດ: ${esc(ht)}</span>`:"");
   return `<button class="item" data-id="${it.id}">
       ${tagHTML(by,statusClass(st))}
       <span class="meta">
-        <span class="nm">${esc(labelOf(it))} <i class="stbadge" style="background:${statusColor(st)}">${esc(statusLabel(st))}</i>${opt.upd?' <i class="stbadge" style="background:var(--muted)">ອັບເດດ</i>':""}</span>
+        <span class="nm">${esc(labelOf(it))} <i class="stbadge" style="background:${statusColor(st)}">${esc(statusLabel(st))}</i>${opt.old?' <i class="stbadge visits">ລູກຄ້າເກົ່າ</i>':(tl.length>1?` <i class="stbadge visits">ມາ ${tl.length} ຄັ້ງ</i>`:"")}</span>
         <span class="ph num">${esc(fmtPhone(it.phone))}</span>
         <span class="sub">${sub}</span>
+        ${oldLine}
       </span>
       ${opt.noDate?"":`<span class="dt num">${esc(it.date||"")}</span>`}</button>`;
 }
@@ -729,7 +808,8 @@ function renderSummary(){
 /* ══════════ ສະຫຼຸບລາຍວັນ ══════════ */
 function dayKeys(){
   const set=new Set();
-  items.filter(i=>!i.deleted).forEach(i=>{ if(i.date)set.add(i.date); if(i.lastDate)set.add(i.lastDate); });
+  items.filter(i=>!i.deleted).forEach(i=>{ if(i.date)set.add(i.date); if(i.lastDate)set.add(i.lastDate);
+    timeline(i).forEach(e=>{ if(e.d) set.add(e.d); }); });
   set.add(today());
   return [...set].sort().reverse();
 }
@@ -740,11 +820,20 @@ function fillDays(){
   el.value=ks.includes(keep)?keep:(ks[0]||today());
 }
 /* ລູກຄ້າຂອງມື້: ໃໝ່ (ບັນທຶກມື້ນັ້ນ) + ເບີເກົ່າທີ່ຕິດຕໍ່ມາອີກໃນມື້ນັ້ນ */
+/* ໃຊ້ປະຫວັດ: ລູກຄ້າທີ່ມີການຕິດຕໍ່ໃນມື້ນັ້ນ + ສະຖານະ “ຂອງມື້ນັ້ນ” (ບໍ່ແມ່ນສະຖານະລ່າສຸດ)
+   ເຊັ່ນ ມັດຈຳ 21 → ປິດການຂາຍ 22: ມື້ 21 ສະແດງ “ມັດຈຳ”, ມື້ 22 ສະແດງ “ປິດຍອດ · ລູກຄ້າເກົ່າຈາກ 21” */
 function dayData(d){
-  const fresh=alive().filter(i=>i.date===d);
-  const upd=alive().filter(i=>i.lastDate===d&&i.date!==d);
-  const all=[...fresh,...upd];
-  const byOf=i=>(i.date===d?i.by:(i.lastBy||i.by));
+  const all=[];
+  alive().forEach(it=>{
+    const tl=timeline(it);
+    const idx=tl.map(e=>e.d).lastIndexOf(d);
+    if(idx<0) return;
+    const e=tl[idx];
+    all.push({...it,status:e.st||it.status||"open",_by:e.by||it.by,_first:tl[0].d,_visit:idx+1,_new:tl[0].d===d,_note:e.n||""});
+  });
+  const fresh=all.filter(r=>r._new), upd=all.filter(r=>!r._new);
+  all.splice(0,all.length,...fresh,...upd);
+  const byOf=i=>i._by||i.by;
   const ems=[...new Set(all.map(byOf).filter(Boolean))];
   const users=ems.map(em=>{const a=all.filter(r=>byOf(r)===em);
     return {em,name:who(em),n:a.length,sold:a.filter(r=>r.status==="sold").length};}).sort((a,b)=>b.n-a.n);
@@ -767,7 +856,7 @@ function renderDaily(){
   $("#d-proj").innerHTML=barsHTML(B.pj,tot,none)+(B.multi?MULTI_NOTE:"");
   $("#d-source").innerHTML=barsHTML(B.sr,tot,none);
   $("#d-list").innerHTML=D.all.length
-    ?D.all.map(it=>custRow(it,{noDate:true,upd:it.date!==D.d,by:D.byOf(it)})).join("")
+    ?D.all.map(it=>custRow(it,{noDate:true,by:D.byOf(it),old:it._new?null:{first:it._first,visit:it._visit}})).join("")
     :`<div class="empty">${none}</div>`;
   const el=$("#d-day");
   $("#d-prev").disabled=el.selectedIndex>=el.options.length-1;
@@ -791,21 +880,21 @@ function fillSumProjects(){
 function renderToday(){
   if(!$("#t-today")) return;
   const t=today(), mk=t.slice(0,7), a=alive();
-  const tod=a.filter(i=>i.date===t||i.lastDate===t);
+  const D=dayData(t);
   const mon=a.filter(i=>(i.date||"").startsWith(mk));
-  $("#t-today").innerHTML=nPeople(tod.length);
+  $("#t-today").innerHTML=nPeople(D.all.length);
   $("#t-month").innerHTML=nPeople(mon.length);
   $("#t-sold").innerHTML=nPeople(mon.filter(i=>i.status==="sold").length);
   /* ລ່າສຸດຢູ່ເທິງ (ລາຍການທີ່ກຳລັງບັນທຶກ ເວລາຍັງບໍ່ມາຈາກເຊີບເວີ ໃຫ້ຢູ່ເທິງສຸດ) */
   const ts=i=>(i.createdAt===null||i.updatedAt===null)?9e15:Math.max((i.updatedAt&&i.updatedAt.seconds)||0,(i.createdAt&&i.createdAt.seconds)||0);
-  const latest=tod.slice().sort((x,y)=>ts(y)-ts(x)).slice(0,8);
+  const latest=D.all.slice().sort((x,y)=>ts(y)-ts(x)).slice(0,8);
   $("#todaylist").innerHTML=latest.length?latest.map(it=>{
-    const st=it.status||"open", upd=it.date!==t, by=upd?(it.lastBy||it.by):it.by;
+    const st=it.status||"open", by=it._by||it.by;
     return `<button class="item" data-id="${it.id}">${tagHTML(by,statusClass(st))}
-      <span class="meta"><span class="nm">${esc(labelOf(it))}${upd?' <i class="stbadge" style="background:var(--muted)">ອັບເດດ</i>':""}</span>
+      <span class="meta"><span class="nm">${esc(labelOf(it))}${it._new?"":' <i class="stbadge visits">ລູກຄ້າເກົ່າ</i>'}</span>
         <span class="ph num">${esc(fmtPhone(it.phone))}</span>
-        <span class="sub">${esc(statusLabel(st))} · ${esc(who(by))}</span></span></button>`;
-  }).join("")+(tod.length>latest.length?`<p class="hint" style="text-align:center">ແລະ ອີກ ${tod.length-latest.length} ຄົນ — ເບິ່ງທັງໝົດໃນ “ສະຫຼຸບລາຍວັນ”</p>`:"")
+        <span class="sub">${esc(statusLabel(st))} · ${esc(who(by))}${it._new?"":" · ຈາກວັນທີ "+esc(it._first)}</span></span></button>`;
+  }).join("")+(D.all.length>latest.length?`<p class="hint" style="text-align:center">ແລະ ອີກ ${D.all.length-latest.length} ຄົນ — ເບິ່ງທັງໝົດໃນ “ສະຫຼຸບລາຍວັນ”</p>`:"")
   :`<div class="empty">ມື້ນີ້ຍັງບໍ່ມີການບັນທຶກ</div>`;
 }
 
@@ -880,7 +969,7 @@ function reportData(kind){
   if(kind==="day"){
     const D=dayData($("#d-day").value);
     return {kind,title:"ລາຍງານລູກຄ້າປະຈຳວັນ",period:"ວັນທີ "+D.d,sub:"",file:"USABAI-daily-"+D.d,
-      tiles:[["ລູກຄ້າທັງໝົດ",D.all.length,C_NAVY],["ລູກຄ້າໃໝ່",D.fresh.length,"#2B4C7E"],["ອັບເດດເບີເກົ່າ",D.upd.length,C_MUTED],
+      tiles:[["ລູກຄ້າທັງໝົດ",D.all.length,C_NAVY],["ລູກຄ້າໃໝ່",D.fresh.length,"#2B4C7E"],["ລູກຄ້າເກົ່າກັບມາ",D.upd.length,C_MUTED],
              ["ປິດຍອດຂາຍ",D.sold,"#2E6B4C"],["ບໍ່ມີເບີໂທ",D.nop,"#8A6D3B"]],
       rows:D.all,B:breakdowns(D.all),users:D.users,gone:[],byOf:D.byOf,day:D.d};
   }
@@ -925,8 +1014,8 @@ function chartBlock(title,list,total,note){
 /* ── ສ່ວນປະກອບຂອງລາຍງານ (ແຕ່ລະກ້ອນຮູ້ຄວາມສູງຂອງຕົນ → ແບ່ງໜ້າ A4 ໄດ້) ── */
 function tableCols(kind){
   return kind==="day"
-    ?[{k:"i",t:"#",w:52},{k:"name",t:"ລູກຄ້າ",w:190},{k:"phone",t:"ເບີໂທ",w:170},{k:"status",t:"ສະຖານະ",w:180},
-      {k:"proj",t:"ໂຄງການ",w:180},{k:"src",t:"ເຫັນຈາກ",w:130},{k:"by",t:"ຜູ້ບັນທຶກ",w:120},{k:"type",t:"ປະເພດ",w:90}]
+    ?[{k:"i",t:"#",w:52},{k:"name",t:"ລູກຄ້າ",w:170},{k:"phone",t:"ເບີໂທ",w:160},{k:"status",t:"ສະຖານະມື້ນີ້",w:170},
+      {k:"proj",t:"ໂຄງການ",w:170},{k:"src",t:"ເຫັນຈາກ",w:110},{k:"by",t:"ຜູ້ບັນທຶກ",w:110},{k:"type",t:"ລູກຄ້າ ໃໝ່/ເກົ່າ",w:170}]
     :[{k:"i",t:"#",w:52},{k:"date",t:"ວັນທີ",w:120},{k:"name",t:"ລູກຄ້າ",w:196},{k:"phone",t:"ເບີໂທ",w:150},
       {k:"status",t:"ສະຖານະ",w:160},{k:"proj",t:"ໂຄງການ",w:180},{k:"src",t:"ເຫັນຈາກ",w:120},{k:"by",t:"ຜູ້ບັນທຶກ",w:134}];
 }
@@ -972,20 +1061,25 @@ function theadBlock(cols){return {type:"thead",h:50,draw:(x,y)=>{
   x.fillStyle=C_NAVY; rrect(x,RM,y,RW-2*RM,46,8); x.fill();
   let cx=RM; cols.forEach(c=>{txt(x,c.t,cx+10,y+30,rf(18,700),"#fff","left",c.w-20); cx+=c.w;});
 }};}
-function rowBlock(R,cols,it,i){return {type:"row",h:44,draw:(x,y)=>{
-  if(i%2===1){x.fillStyle="#F5F5F2"; x.fillRect(RM,y,RW-2*RM,44);}
-  const st=it.status||"open", upd=!!(R.day&&it.date!==R.day);
+/* ແຖວລູກຄ້າ — ຖ້າມາຫຼາຍຄັ້ງ ຈະມີແຖວນ້ອຍລຸ່ມ: ປະຫວັດ 2026-09-21 ມັດຈຳ → 2026-09-22 ປິດຍອດ */
+function rowBlock(R,cols,it,i){
+  const ht=histText(it), H=ht?70:44;
+  return {type:"row",h:H,draw:(x,y)=>{
+  if(i%2===1){x.fillStyle="#F5F5F2"; x.fillRect(RM,y,RW-2*RM,H);}
+  const st=it.status||"open", old=!!(R.day&&it._new===false);
   const v={i:String(i+1),date:it.date||"",name:labelOf(it),phone:fmtPhone(it.phone),status:statusLabel(st),
-    proj:projText(it)||"—",src:it.source||"—",by:who(R.byOf(it)),type:upd?"ອັບເດດ":"ໃໝ່"};
+    proj:projText(it)||"—",src:it.source||"—",by:who(R.byOf(it)),type:old?"ເກົ່າ ຈາກ "+it._first:"ໃໝ່"};
+  const upd=old;
   let cx=RM;
   cols.forEach(c=>{
     let tx=cx+10, w=c.w-20;
     if(c.k==="status"){x.fillStyle=statusColor(st); x.beginPath(); x.arc(tx+6,y+22,6,0,Math.PI*2); x.fill(); tx+=18; w-=18;}
     const color=c.k==="i"?C_MUTED:(c.k==="type"&&upd?C_ORANGE:C_INK);
-    txt(x,v[c.k],tx,y+29,rf(19,c.k==="name"?700:400),color,"left",w);
+    txt(x,v[c.k],tx,y+29,rf(c.k==="type"&&upd?17:19,c.k==="name"?700:400),color,"left",w);
     cx+=c.w;
   });
-  x.fillStyle="#E4E4DF"; x.fillRect(RM,y+43,RW-2*RM,1);
+  if(ht){ const hx=RM+cols[0].w+10; txt(x,"ປະຫວັດ: "+ht,hx,y+58,rf(16,400),C_MUTED,"left",RW-RM-hx-10); }
+  x.fillStyle="#E4E4DF"; x.fillRect(RM,y+H-1,RW-2*RM,1);
 }};}
 function goneRow(it){return {type:"row",h:44,draw:(x,y)=>{
   x.fillStyle="#FBEAE8"; x.fillRect(RM,y,RW-2*RM,44);

@@ -177,6 +177,17 @@ label.f>span.dupnote{display:block;margin:9px 0 0;background:#FFF6E5;border:1px 
 label.f>span.dupnote.hide{display:none}
 .hint{font-size:12.5px;color:var(--muted);margin:10px 0 0;line-height:1.6}
 .hint.top{margin:-6px 0 8px}
+/* ── ປ້າຍ “ມາ N ຄັ້ງ / ລູກຄ້າເກົ່າ” + ແຖວປະຫວັດ ── */
+.stbadge.visits{background:#FFF3E8;color:var(--orange);border:1px solid #F1C9A3}
+.item .sub.hist{color:#8A5A22}
+.hist{background:var(--line-2);border-radius:9px;padding:10px 12px;margin-bottom:12px}
+.hist .histttl{margin:0 0 6px;font-size:13.5px;font-weight:700;color:var(--ink)}
+.hrow{display:flex;align-items:center;gap:10px;padding:7px 0;border-top:1px solid #E2E2DD}
+.hrow:first-of-type{border-top:none}
+.hdot{width:11px;height:11px;border-radius:50%;flex:none}
+.hbody{flex:1;min-width:0;font-size:14px;line-height:1.5}
+.hbody small{display:block;font-size:12px;color:var(--muted);overflow-wrap:anywhere}
+.hrow .btn.sm{padding:5px 10px;font-size:12.5px}
 
 /* ── ສະຫຼຸບ: ແຖບ ລາຍເດືອນ / ລາຍວັນ ── */
 .sumtabs{margin-bottom:14px}

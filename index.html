@@ -35,7 +35,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Phetsarath:wght@400;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20">
+<link rel="stylesheet" href="style.css?v=21">
 </head>
 <body>
 
@@ -218,7 +218,7 @@
           <div class="bignum"><b class="num" id="d-total">0</b><span id="d-caption">ລູກຄ້າໃນມື້ນີ້</span></div>
           <div class="stats">
             <div class="stat open"><b class="num" id="d-new">0</b><span>ລູກຄ້າໃໝ່</span></div>
-            <div class="stat"><b class="num" id="d-upd">0</b><span>ອັບເດດເບີເກົ່າ</span></div>
+            <div class="stat"><b class="num" id="d-upd">0</b><span>ລູກຄ້າເກົ່າກັບມາ</span></div>
             <div class="stat sold"><b class="num" id="d-sold">0</b><span>ປິດຍອດຂາຍ</span></div>
             <div class="stat"><b class="num" id="d-nop">0</b><span>ບໍ່ມີເບີໂທ</span></div>
           </div>
@@ -295,6 +295,7 @@
     <label class="f"><span>ເບີໂທລະສັບ</span><input class="input num" id="e-phone" type="tel" inputmode="tel">
       <label class="chk"><input type="checkbox" id="e-nophone"><span>ລູກຄ້າບໍ່ມີເບີໂທ</span></label></label>
     <label class="f"><span>ຊື່ລູກຄ້າ (ລຶບຊື່ອອກ = ໃຊ້ລະຫັດອັດຕະໂນມັດ)</span><input class="input" id="e-name"></label>
+    <div class="hist" id="e-hist"></div>
     <label class="f"><span>ສະຖານະ</span>
       <select class="input" id="e-status"></select>
       <div class="addrow hide" id="e-status-add">
@@ -377,6 +378,6 @@
 <div class="toast" id="toast"></div>
 <div id="sheetprint"></div>
 
-<script type="module" src="app.js?v=20"></script>
+<script type="module" src="app.js?v=21"></script>
 </body>
 </html>
